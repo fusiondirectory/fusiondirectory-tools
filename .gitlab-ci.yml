@@ -1,0 +1,90 @@
+stages:
+  - lint
+  - codestyle
+  - manpages
+  - tarballs
+  - trigger
+
+## Stage lint
+
+# PHP lint (stretch)
+create_php_lint_rapport:
+  image: registry.fusiondirectory.org/fusiondirectory/fd/phpcodesniffer-cli:buster
+  stage: lint
+  only:
+    - branches
+  script:
+    - find . -type f -name '*.php' -o -name '*.inc' -print0 | xargs -0 -n1 php -l
+
+## Stage codestyle
+
+# PHP codesniffer
+create_php_code_sniffer_rapport:
+  image: registry.fusiondirectory.org/fusiondirectory/fd/phpcodesniffer-cli:buster
+  stage: codestyle
+  only:
+    - branches
+  script:
+    - test -d ../dev-tools/ && rm -Rf ../dev-tools/
+    - git clone --depth 1 https://gitlab.fusiondirectory.org/fusiondirectory/dev-tools.git ../dev-tools
+    - find . -type f -name '*.php' -o -name '*.inc' > ./filelist
+    - phpcs --ignore=class_sieve.inc --standard=../dev-tools/php-codesniffer-rules/FDStandard/ruleset.xml --file-list=./filelist
+    - git clone --depth 1 https://github.com/PHPCompatibility/PHPCompatibility.git ../PHPCompatibility
+    - git clone --depth 1 https://github.com/PHPCSStandards/PHPCSUtils.git ../PHPCSUtils
+    - phpcs --config-set installed_paths /builds/fusiondirectory/PHPCompatibility,/builds/fusiondirectory/PHPCSUtils
+    - phpcs --standard=PHPCompatibility --runtime-set testVersion 7.3-7.4 --file-list=./filelist
+
+# phpstan
+create_phpstan_rapport:
+  image: registry.fusiondirectory.org/fusiondirectory/fd/phpstan:buster
+  stage: codestyle
+  only:
+    - branches
+  script:
+    - test -d ../dev-tools/ && rm -Rf ../dev-tools/
+    - git clone --depth 1 https://gitlab.fusiondirectory.org/fusiondirectory/dev-tools.git ../dev-tools
+    - test -d ../fusiondirectory/ && rm -Rf ../fusiondirectory/
+    - git clone --depth 1 https://gitlab.fusiondirectory.org/fusiondirectory/fd.git ../fusiondirectory
+    - cp ../dev-tools/phpstan/fusiondirectory/1.4-dev/*.neon .
+    - /root/.composer/vendor/bin/phpstan analyse -c phpstan-plugins.neon
+
+#build-tarballs:
+#  stage: tarballs
+#  only:
+#    - 1.4-dev
+#  script:
+#    - mkdir ../fusiondirectory-plugins-1.4/
+#    - mv ./* ../fusiondirectory-plugins-1.4/
+#    - mv  ../fusiondirectory-plugins-1.4/ ./
+#    - tar -cvzf fusiondirectory-plugins-1.4.tar.gz *
+#  artifacts:
+#    paths:
+#      - fusiondirectory-plugins-1.4.tar.gz
+#    expire_in: 30d
+#
+#build-release:
+#  stage: tarballs
+#  only:
+#    - tags
+#  script:
+#    - mkdir ../fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
+#    - mv ./* ../fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
+#    - mv  ../fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/ ./
+#    - tar -cvzf fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz *
+#  artifacts:
+#    paths:
+#      - fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz
+#
+#trigger-ci-debian-buster:
+#  stage: trigger
+#  only:
+#    - 1.4-dev
+#  variables:
+#    GROUP: "$GROUP"
+#    BRANCH_CORE: "$CI_COMMIT_REF_NAME"
+#    BRANCH_PLUGIN: "$CI_COMMIT_REF_NAME"
+#    BRANCH_BUILD_DEBIAN_BUSTER: "$BRANCH_BUILD_DEBIAN_BUSTER"
+#  trigger:
+#    project: debian/buster-fusiondirectory-dev
+#    branch: "$BRANCH_BUILD_DEBIAN_BUSTER"
+#
