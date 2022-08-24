@@ -43,48 +43,41 @@ create_phpstan_rapport:
   script:
     - test -d ../dev-tools/ && rm -Rf ../dev-tools/
     - git clone --depth 1 https://gitlab.fusiondirectory.org/fusiondirectory/dev-tools.git ../dev-tools
-    - test -d ../fusiondirectory/ && rm -Rf ../fusiondirectory/
-    - git clone --depth 1 https://gitlab.fusiondirectory.org/fusiondirectory/fd.git ../fusiondirectory
-    - cp ../dev-tools/phpstan/fusiondirectory/1.4-dev/*.neon .
-    - /root/.composer/vendor/bin/phpstan analyse -c phpstan-plugins.neon
+    - cp ../dev-tools/phpstan/fusiondirectory-tools/*.neon .
+    - apt install --force-yes -y curl
+    - curl "https://gitlab.fusiondirectory.org/api/v4/projects/336/jobs/artifacts/master/raw/fusiondirectory-ldap-master.tar.gz?job=build-tarballs" -o fusiondirectory-ldap-master.tar.gz
+    - tar xfv ./fusiondirectory-ldap-master.tar.gz
+    - mv ./fusiondirectory-ldap-master/src/FusionDirectory/ /usr/share/php/
+    - rm -Rf ./fusiondirectory-ldap-master.tar.gz ./fusiondirectory-ldap-master/
+    - curl "https://gitlab.fusiondirectory.org/api/v4/projects/366/jobs/artifacts/master/raw/fusiondirectory-cli-master.tar.gz?job=build-tarballs" -o fusiondirectory-cli-master.tar.gz
+    - tar xfv ./fusiondirectory-cli-master.tar.gz
+    - mv ./fusiondirectory-cli-master/src/FusionDirectory/* /usr/share/php/FusionDirectory/
+    - rm -Rf ./fusiondirectory-cli-master.tar.gz ./fusiondirectory-cli-master/
+    - /root/.composer/vendor/bin/phpstan analyse -c phpstan.neon
 
-#build-tarballs:
-#  stage: tarballs
-#  only:
-#    - 1.4-dev
-#  script:
-#    - mkdir ../fusiondirectory-plugins-1.4/
-#    - mv ./* ../fusiondirectory-plugins-1.4/
-#    - mv  ../fusiondirectory-plugins-1.4/ ./
-#    - tar -cvzf fusiondirectory-plugins-1.4.tar.gz *
-#  artifacts:
-#    paths:
-#      - fusiondirectory-plugins-1.4.tar.gz
-#    expire_in: 30d
-#
-#build-release:
-#  stage: tarballs
-#  only:
-#    - tags
-#  script:
-#    - mkdir ../fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
-#    - mv ./* ../fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
-#    - mv  ../fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/ ./
-#    - tar -cvzf fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz *
-#  artifacts:
-#    paths:
-#      - fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz
-#
-#trigger-ci-debian-buster:
-#  stage: trigger
-#  only:
-#    - 1.4-dev
-#  variables:
-#    GROUP: "$GROUP"
-#    BRANCH_CORE: "$CI_COMMIT_REF_NAME"
-#    BRANCH_PLUGIN: "$CI_COMMIT_REF_NAME"
-#    BRANCH_BUILD_DEBIAN_BUSTER: "$BRANCH_BUILD_DEBIAN_BUSTER"
-#  trigger:
-#    project: debian/buster-fusiondirectory-dev
-#    branch: "$BRANCH_BUILD_DEBIAN_BUSTER"
-#
+build-tarballs:
+  stage: tarballs
+  only:
+    - master
+  script:
+    - mkdir ../fusiondirectory-tools-master/
+    - mv ./* ../fusiondirectory-tools-master/
+    - mv  ../fusiondirectory-tools-master/ ./
+    - tar -cvzf fusiondirectory-tools-master.tar.gz *
+  artifacts:
+    paths:
+      - fusiondirectory-tools-master.tar.gz
+    expire_in: 30d
+
+build-release:
+  stage: tarballs
+  only:
+    - tags
+  script:
+    - mkdir ../fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
+    - mv ./* ../fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
+    - mv  ../fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/ ./
+    - tar -cvzf fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz *
+  artifacts:
+    paths:
+      - fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz
