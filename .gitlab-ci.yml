@@ -58,7 +58,7 @@ create_phpstan_rapport:
 build-tarballs:
   stage: tarballs
   only:
-    - master
+    - main
   script:
     - mkdir ../fusiondirectory-tools-master/
     - mv ./* ../fusiondirectory-tools-master/
