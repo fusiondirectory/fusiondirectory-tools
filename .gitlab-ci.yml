@@ -55,43 +55,29 @@ create_phpstan_rapport:
     - rm -Rf ./fusiondirectory-cli-master.tar.gz ./fusiondirectory-cli-master/
     - /root/.composer/vendor/bin/phpstan analyse -c phpstan.neon
 
-#build-tarballs:
-#  stage: tarballs
-#  only:
-#    - 1.4-dev
-#  script:
-#    - mkdir ../fusiondirectory-plugins-1.4/
-#    - mv ./* ../fusiondirectory-plugins-1.4/
-#    - mv  ../fusiondirectory-plugins-1.4/ ./
-#    - tar -cvzf fusiondirectory-plugins-1.4.tar.gz *
-#  artifacts:
-#    paths:
-#      - fusiondirectory-plugins-1.4.tar.gz
-#    expire_in: 30d
-#
-#build-release:
-#  stage: tarballs
-#  only:
-#    - tags
-#  script:
-#    - mkdir ../fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
-#    - mv ./* ../fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
-#    - mv  ../fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/ ./
-#    - tar -cvzf fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz *
-#  artifacts:
-#    paths:
-#      - fusiondirectory-plugins-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz
-#
-#trigger-ci-debian-buster:
-#  stage: trigger
-#  only:
-#    - 1.4-dev
-#  variables:
-#    GROUP: "$GROUP"
-#    BRANCH_CORE: "$CI_COMMIT_REF_NAME"
-#    BRANCH_PLUGIN: "$CI_COMMIT_REF_NAME"
-#    BRANCH_BUILD_DEBIAN_BUSTER: "$BRANCH_BUILD_DEBIAN_BUSTER"
-#  trigger:
-#    project: debian/buster-fusiondirectory-dev
-#    branch: "$BRANCH_BUILD_DEBIAN_BUSTER"
-#
+build-tarballs:
+  stage: tarballs
+  only:
+    - master
+  script:
+    - mkdir ../fusiondirectory-tools-master/
+    - mv ./* ../fusiondirectory-tools-master/
+    - mv  ../fusiondirectory-tools-master/ ./
+    - tar -cvzf fusiondirectory-tools-master.tar.gz *
+  artifacts:
+    paths:
+      - fusiondirectory-tools-master.tar.gz
+    expire_in: 30d
+
+build-release:
+  stage: tarballs
+  only:
+    - tags
+  script:
+    - mkdir ../fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
+    - mv ./* ../fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/
+    - mv  ../fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"')/ ./
+    - tar -cvzf fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz *
+  artifacts:
+    paths:
+      - fusiondirectory-tools-$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f3 | tr -d '"').tar.gz
