@@ -21,8 +21,8 @@
 
 namespace FusionDirectory\Tools;
 
-require 'FusionDirectory/Tools/LdapApplication.php';
-require 'FusionDirectory/Tools/VarHandling.php';
+require 'FusionDirectory/Cli/LdapApplication.php';
+require 'FusionDirectory/Cli/VarHandling.php';
 
 use \FusionDirectory\Ldap;
 
