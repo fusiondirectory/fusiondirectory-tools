@@ -51,7 +51,7 @@ create_phpstan_rapport:
     - rm -Rf ./fusiondirectory-ldap-master.tar.gz ./fusiondirectory-ldap-master/
     - curl "https://gitlab.fusiondirectory.org/api/v4/projects/366/jobs/artifacts/master/raw/fusiondirectory-cli-master.tar.gz?job=build-tarballs" -o fusiondirectory-cli-master.tar.gz
     - tar xfv ./fusiondirectory-cli-master.tar.gz
-    - mv ./fusiondirectory-cli-master/src/FusionDirectory/ /usr/share/php/
+    - mv ./fusiondirectory-cli-master/src/FusionDirectory/* /usr/share/php/FusionDirectory/
     - rm -Rf ./fusiondirectory-cli-master.tar.gz ./fusiondirectory-cli-master/
     - /root/.composer/vendor/bin/phpstan analyse -c phpstan.neon
 
