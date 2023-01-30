@@ -150,6 +150,56 @@ class InsertSchema extends Cli\Application
     }
   }
 
+  protected function dumpDefinition (string $definition): void
+  {
+    static $noValueKeywords = [
+      'SINGLE-VALUE','OBSOLETE','COLLECTIVE','NO-USER-MODIFICATION',
+      'STRUCTURAL','AUXILIARY','ABSTRACT',
+    ];
+
+    if (preg_match('/^(\{\d+\})?\(\s*([\d\.a-zA-Z:]+)\s+/', $definition, $m, PREG_OFFSET_CAPTURE) === 1) {
+      echo '( '.$m[2][0];
+      $offset = strlen($m[0][0]);
+      $breakline = TRUE;
+      while (preg_match('/(([\w\.\{\}-]+|\'[^\']+\'|\([^\)]+\))(\s+|\)))/', $definition, $m, PREG_OFFSET_CAPTURE, $offset)) {
+        if ($breakline) {
+          echo "\n\t";
+          $breakline = FALSE;
+        } else {
+          $breakline = TRUE;
+        }
+        /* Match each subpart of the definition and break into lines with tabs in front */
+        echo $m[0][0];
+        if (in_array($m[2][0], $noValueKeywords, TRUE)) {
+          $breakline = TRUE;
+        }
+        $offset = $m[0][1] + strlen($m[0][0]);
+      }
+      if ($breakline) {
+        echo "\n";
+      }
+      if ($offset < strlen($definition)) {
+        /* Output the end of definition which did not match pattern, if any */
+        echo substr($definition, $offset)."\n";
+      }
+    } else {
+      echo $definition."\n";
+    }
+  }
+
+  /**
+   * @param array<string,array<string>> $tree
+   */
+  function printTree (array $tree, string $oc, string $indent = ''): void
+  {
+    echo "$indent$oc\n";
+    if (isset($tree[$oc])) {
+      foreach ($tree[$oc] as $sub) {
+        $this->printTree($tree, $sub, $indent.'-');
+      }
+    }
+  }
+
   /* Commands */
 
   /**
