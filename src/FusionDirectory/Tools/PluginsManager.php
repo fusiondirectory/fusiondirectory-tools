@@ -137,259 +137,162 @@ class InsertSchema extends Cli\Application
     $this->runCommands();
   }
 
-function createBranch($ldap, $base, $ou) {
-  preg_match('m/^ou=([^,]*),?$/', $ou) || die "Can’t create branch of unknown type $ou\n";
-  $branchAdd = $ldap->add( "$ou,$base",
-    'attr' => [
-      'ou'  => $fake/*check:$1*/,
-      'objectClass' =>  'organizationalUnit'
-      ]
-  );
+  function createBranch($ldap, $base, $ou) {
+    preg_match('m/^ou=([^,]*),?$/', $ou) || die "Can’t create branch of unknown type $ou\n";
+    $branchAdd = $ldap->add( "$ou,$base",
+      'attr' => [
+        'ou'  => $fake/*check:$1*/,
+        'objectClass' =>  'organizationalUnit'
+        ]
+    );
 
-  $branchAdd->code && die "! failed to add LDAP's $ou,$base branch: ".$branchAdd->error."\n";
-}
-
-function branchExists($ldap, $branch) {
-  // search for branch
-  $branchMesg = $ldap->search ('base' => $branch, 'filter' => '(objectClass=*)', 'scope' => 'base');
-  if ($branchMesg->code == 32) {
-    return 0;
-  }
-  $branchMesg->code && die $branchMesg->error;
-
-  $entries = $branchMesg->entries;
-  return (/*check*/isset(($entries[0])));
-}
-
-// function that add plugin record
-function addPluginRecord() {
-  // initiate the LDAP connexion
-  $hashLdapParam = getLdapConnexion();
-  $pathfile=$fake/*check:$*/[0];
-  $pluginInfo = loadFile($pathfile);
-
-  // LDAP's connection's parameters
-  $base = $hashLdapParam['base'];
-  $ldap = $hashLdapParam['ldap'];
-
-  if (!branchExists($ldap, "$configpluginrdn,ou=fusiondirectory,$base")) {
-    createBranch($ldap, "ou=fusiondirectory,".$base, $configpluginrdn);
-    print "Create plugin branch";
+    $branchAdd->code && die "! failed to add LDAP's $ou,$base branch: ".$branchAdd->error."\n";
   }
 
-  $obj=['objectClass' => ['top','fdPlugin']];
-
-  foreach (array_keys($pluginmanagementmapping) as $k) {
-    $section = preg_split('/:/', $pluginmanagementmapping[$k]);
-    if (/*check*/isset($pluginInfo[$section[0]][$section[1]])){
-      $obj[$k] = $pluginInfo[$section[0]][$section[1]];
+  function branchExists($ldap, $branch) {
+    // search for branch
+    $branchMesg = $ldap->search ('base' => $branch, 'filter' => '(objectClass=*)', 'scope' => 'base');
+    if ($branchMesg->code == 32) {
+      return 0;
     }
+    $branchMesg->code && die $branchMesg->error;
+
+    $entries = $branchMesg->entries;
+    return (/*check*/isset(($entries[0])));
   }
 
-  $dn = "cn=".$pluginInfo['information']['name'].",".$configpluginrdn.",ou=fusiondirectory,".$base;
+  // function that add plugin record
+  function addPluginRecord() {
+    // initiate the LDAP connexion
+    $hashLdapParam = getLdapConnexion();
+    $pathfile=$fake/*check:$*/[0];
+    $pluginInfo = loadFile($pathfile);
 
-  $options = $obj;
+    // LDAP's connection's parameters
+    $base = $hashLdapParam['base'];
+    $ldap = $hashLdapParam['ldap'];
 
-  if (branchExists($ldap, $dn)) {
-    print "Plugin record exist : ".$dn."\nDeleting it !\n";
-    deletePluginRecord($dn);
-  }
+    if (!branchExists($ldap, "$configpluginrdn,ou=fusiondirectory,$base")) {
+      createBranch($ldap, "ou=fusiondirectory,".$base, $configpluginrdn);
+      print "Create plugin branch";
+    }
+
+    $obj=['objectClass' => ['top','fdPlugin']];
+
+    foreach (array_keys($pluginmanagementmapping) as $k) {
+      $section = preg_split('/:/', $pluginmanagementmapping[$k]);
+      if (/*check*/isset($pluginInfo[$section[0]][$section[1]])){
+        $obj[$k] = $pluginInfo[$section[0]][$section[1]];
+      }
+    }
+
+    $dn = "cn=".$pluginInfo['information']['name'].",".$configpluginrdn.",ou=fusiondirectory,".$base;
+
+    $options = $obj;
+
+    if (branchExists($ldap, $dn)) {
+      print "Plugin record exist : ".$dn."\nDeleting it !\n";
+      deletePluginRecord($dn);
+    }
 
 
-  $mesg = $ldap->add( $dn, 'attr' => /*check:\*/$options );
-  print "Create plugin record\n";
-  if ($mesg->code) {
-    print $dn.": ".$mesg->error." (".$mesg->code.")\n";
-  }
-}
-
-// function that delete plugin record
-function deletePluginRecord() {
-  // initiate the LDAP connexion
-  $pluginDn=$fake/*check:$*/[0];
-  $hashLdapParam = getLdapConnexion();
-
-  // LDAP's connection's parameters
-  $base = $hashLdapParam['base'];
-  $ldap = $hashLdapParam['ldap'];
-
-  if (!branchExists($ldap,$pluginDn)) {
-    exit;
-  }else{
-    $mesg = $ldap->unset($pluginDn);
-
+    $mesg = $ldap->add( $dn, 'attr' => /*check:\*/$options );
+    print "Create plugin record\n";
     if ($mesg->code) {
-      print $pluginDn.": ".$mesg->error."\n";
-    }
-  }
-}
-
-// function that check if plugin is inserted ldap tree
-function checkPluginExistence() {
-
-  // check if plugin is set on CLI
-  $pluginName = $fake/*check:$*/[0];
-
-  // initiate the LDAP connexion
-  $hashLdapParam = getLdapConnexion();
-
-  // LDAP's connection's parameters
-  $base = $hashLdapParam['base'];
-  $ldap = $hashLdapParam['ldap'];
-
-  // Search for plugin
-  $mesg = $ldap->search(
-    'base' => "$configpluginrdn,ou=fusiondirectory,$base",
-    'filter' => "(&(objectClass=fdPlugin)(cn=".$pluginName."))",
-    'attrs' => ['cn','description']
-  );
-  $mesg->code && die $mesg->error;
-  $entries = $mesg->entries;
-
-//  print($mesg->code."  ".$mesg->error." ".ref($mesg->code));
-  if ($mesg->count == 1){
-    print("Plugin ".$pluginName." is declared\n");
-    return(1);
-  }else{
-    print("Plugin ".$pluginName." is NOT declared\n");
-    return(0);
-  }
-}
-
-function checkPluginNameIsSet() {
-    if ($pluginName === ""){
-      print "--plugin-name is not set as the first parameter. ".$fake/*check:$*/[0]."\n";
-      exit(-1);
-  }
-}
-
-function listPlugins() {
-  // initiate the LDAP connexion
-  $hashLdapParam = getLdapConnexion();
-
-  // LDAP's connection's parameters
-  $base = $hashLdapParam['base'];
-  $ldap = $hashLdapParam['ldap'];
-
-  $pluginattrs=['cn','description','fdPluginInfoAuthors','fdPluginInfoVersion','fdPluginSupportHomeUrl','fdPluginInfoStatus','fdPluginSupportProvider','fdPluginInfoOrigin'];
-
-  // Search for DHCP configurations
-  $mesg = $ldap->search(
-    'base' => "$configpluginrdn,ou=fusiondirectory,$base",
-    'filter' => "(objectClass=fdPlugin)",
-    'attrs' => /*check:\*/$pluginattrs
-  );
-  $mesg->code && die $mesg->error;
-
-  $entries = $mesg->entries;
-  print "There are ".$mesg->count." Plugins configurations in the LDAP\n";
-
-  foreach ($entries as $entry) {
-    print " Plugin :".$entry->getValue('cn')."\n";
-    foreach ($pluginattrs as $val) {
-      $section = preg_split('/:/', $pluginmanagementmapping[$val]);
-      $value="N/A";
-      if (/*check*/isset(($entry->getValue($val)))){
-          $value = $entry->getValue($val);
-      }
-      print "   - ".$section[1]."\t: ".$value."\n";
+      print $dn.": ".$mesg->error." (".$mesg->code.")\n";
     }
   }
 
-}
+  // function that delete plugin record
+  function deletePluginRecord() {
+    // initiate the LDAP connexion
+    $pluginDn=$fake/*check:$*/[0];
+    $hashLdapParam = getLdapConnexion();
 
-// function that install all the FD's plugins from a directory
-function installPlugin() {
-  // ask for the plugins archive
-  if  ($pluginsArchive === ""){
-    $pluginsArchive = askUserInput ("Where is your plugins archive or folder?");
-  }
-  if (!file_exists($pluginsArchive)) {
-      die ("! ".$pluginsArchive." doesn't exists");
-  }
+    // LDAP's connection's parameters
+    $base = $hashLdapParam['base'];
+    $ldap = $hashLdapParam['ldap'];
 
-  $dir = null;
-  if (-d $pluginsArchive) {
-    $dir = dir ($pluginsArchive);
-  } else {
-    // check the archive format
-    preg_match('/^.*\/(.*).tar.gz$/', $pluginsArchive);
-    $name = $fake/*check:$1*/ || die ("! Unkwnow archive $plugins_archive");
-
-    // where the extract files will go
-    $tmpPluginsDir = "/tmp";
-
-    print ("Installing plugins into $vars{fd_home}, please wait...\n");
-
-    // extract the plugins archive
-    $archive = Archive\Extract->new ('archive' => $pluginsArchive);
-    $extract = $archive->extract( 'to' => "$tmp_plugins_dir" ) || die ("! Unable to extract $plugins_archive\n");
-
-    $dir = dir ($tmpPluginsDir."/".$name);
-  }
-  //AGA if no plugin is specified, a list is suggested
-  $pluginsToInstall=[];
-  // List non-hidden children, grep directories, and sort by name
-  $plugins =
-      $fake/*check:sort({$a->basename cmp $b->basename}
-      array_filter($dir, function ($fake) {$fake/*check:$*/->isDir;})->children('no_hidden' => 1))*/;
-
-  if  ($pluginName === ""){
-    print "Available plugins:\n";
-
-    $i = 1;
-    foreach ($plugins as $pluginPath) {
-      print $i++.":".$pluginPath->basename."\n";
-    }
-
-    $userInput = askUserInput("Which plugins do you want to install (use \"all\" to install all plugins)?");
-    $pluginsToInstall = preg_split('/\s/', $userInput);
-  }else{
-      if (file_exists($dir."/".$pluginName)){
-        array_push $pluginsToInstall, $pluginName;
-      }else{
-        print "! ".$pluginName." folder don't exist (".$dir."/".$pluginName.")\n";
-        exit;
-      }
-  }
-
-  chdir ($dir) || die ("! Unable to move to $dir\n");
-  $i = 0;
-  foreach ($plugins as $pluginPath) {
-    $i++;
-
-    $plugin = $pluginPath->basename;
-
-    if (array_filter(count($pluginsToInstall), function ($fake) {($fake/*check:$*/ === "all") || ($fake/*check:$*/ === $i) || ($fake/*check:$*/ === $plugin);})) {
-      print "Installing plugin $plugin\n";
-    } else {
-      continue;
-    }
-
-    // insert add plugin if control.yaml is present
-    if  (file_exists($pluginPath."/control.yaml")) {
-
-      checkPluginDependenciesRequirement($pluginPath."/control.yaml");
-      // add conf inside LDAP TREE
-      addPluginRecord($pluginPath."/control.yaml");
-
-      }
+    if (!branchExists($ldap,$pluginDn)) {
+      exit;
     }else{
-      print "No control.yaml file is present, plugin won't be installed\n"
+      $mesg = $ldap->unset($pluginDn);
+
+      if ($mesg->code) {
+        print $pluginDn.": ".$mesg->error."\n";
+      }
     }
   }
+
+  // function that check if plugin is inserted ldap tree
+  function checkPluginExistence() {
+
+    // check if plugin is set on CLI
+    $pluginName = $fake/*check:$*/[0];
+
+    // initiate the LDAP connexion
+    $hashLdapParam = getLdapConnexion();
+
+    // LDAP's connection's parameters
+    $base = $hashLdapParam['base'];
+    $ldap = $hashLdapParam['ldap'];
+
+    // Search for plugin
+    $mesg = $ldap->search(
+      'base' => "$configpluginrdn,ou=fusiondirectory,$base",
+      'filter' => "(&(objectClass=fdPlugin)(cn=".$pluginName."))",
+      'attrs' => ['cn','description']
+    );
+    $mesg->code && die $mesg->error;
+    $entries = $mesg->entries;
+
+  //  print($mesg->code."  ".$mesg->error." ".ref($mesg->code));
+    if ($mesg->count == 1){
+      print("Plugin ".$pluginName." is declared\n");
+      return(1);
+    }else{
+      print("Plugin ".$pluginName." is NOT declared\n");
+      return(0);
+    }
+  }
+
+  function checkPluginNameIsSet() {
+      if ($pluginName === ""){
+        print "--plugin-name is not set as the first parameter. ".$fake/*check:$*/[0]."\n";
+        exit(-1);
+    }
+  }
+
+  function listPlugins() {
+    // initiate the LDAP connexion
+    $hashLdapParam = getLdapConnexion();
+
+    // LDAP's connection's parameters
+    $base = $hashLdapParam['base'];
+    $ldap = $hashLdapParam['ldap'];
+
+    $pluginattrs=['cn','description','fdPluginInfoAuthors','fdPluginInfoVersion','fdPluginSupportHomeUrl','fdPluginInfoStatus','fdPluginSupportProvider','fdPluginInfoOrigin'];
+
+    // Search for DHCP configurations
+    $mesg = $ldap->search(
+      'base' => "$configpluginrdn,ou=fusiondirectory,$base",
+      'filter' => "(objectClass=fdPlugin)",
+      'attrs' => /*check:\*/$pluginattrs
+    );
+    $mesg->code && die $mesg->error;
+
+    $entries = $mesg->entries;
+    print "There are ".$mesg->count." Plugins configurations in the LDAP\n";
+
+    foreach ($entries as $entry) {
+      print " Plugin :".$entry->getValue('cn')."\n";
+      foreach ($pluginattrs as $val) {
+        $section = preg_split('/:/', $pluginmanagementmapping[$val]);
+        $value="N/A";
+        if (/*check*/isset(($entry->getValue($val)))){
+            $value = $entry->getValue($val);
+        }
+        print "   - ".$section[1]."\t: ".$value."\n";
+      }
+    }
 }
-
-  private $varsKeys = array_keys($vars);
-
-   private $usage = 0;
-
-  setVars();
-
-  if( $usage || ( count($ARGV) <= 0 ) ) {
-    print ( "Usage : $/*check*/0 [--yes]" );
-    foreach (array_keys(( $commands )) as $command) {
-      print ( " [$/*check*/command]" );
-    }
-    print "\n\n";
-  }
