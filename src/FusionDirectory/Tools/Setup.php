@@ -44,7 +44,7 @@ class Setup extends LdapApplication
   public function __construct ()
   {
     $this->vars = [
-      'fd_home'           => '/var/www/fusiondirectory',
+      'fd_home'           => '/usr/share/fusiondirectory',
       'fd_cache'          => '/var/cache/fusiondirectory',
       'fd_config_dir'     => '/etc/fusiondirectory',
       'fd_smarty_path'    => '/usr/share/php/smarty3/Smarty.class.php',
@@ -127,9 +127,10 @@ class Setup extends LdapApplication
   {
     parent::run($argv);
 
-    /* Read variables.inc even if no variables are set, and make sure variables are set first */
-    $this->cmdSetVar($this->getopt['set-var'] ?? []);
-    unset($this->getopt['set-var']);
+    if (isset($this->getopt['set-var']) && !empty($this->getopt['set-var'])) {
+      $this->cmdSetVar($this->getopt['set-var'] ?? []);
+      unset($this->getopt['set-var']);
+    }
 
     $this->runCommands();
   }
