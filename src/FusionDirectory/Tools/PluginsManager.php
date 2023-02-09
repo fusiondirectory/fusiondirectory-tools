@@ -36,19 +36,27 @@ class InsertSchema extends Cli\Application
     parent::__construct();
 
     $this->options  = [
-      'list-schemas'  => [
-        'help'        => 'List schemas',
-        'command'     => 'listSchemas',
+      'check-plugin-exist'  => [
+        'help'        => 'Checking if plugins exists',
+        'command'     => 'checkPluginExistence',
       ],
-      'insert-schema:'  => [
-        'help'        => 'Insert schema',
-        'command'     => 'insertSchema',
+      'install-plugin'  => [
+        'help'        => 'Installing FusionDirectory Plugins',
+        'command'     => 'installPlugin',
+      ],
+      'only-register'  => [
+        'help'        => 'Only register inside LDAP',
+        'command'     => 'onlyRegister',
+      ],
+      'list-plugins'  => [
+        'help'        => 'List installed FusionDirectory plugins',
+        'command'     => 'listPlugins',
       ],
       'help'          => [
         'help'        => 'Show this help',
       ],
     ];
-   
+  
     $this->vars = [
       'fd_home'          => '/var/www/fusiondirectory',
       'fd_cache'         => '/var/cache/fusiondirectory',
@@ -374,13 +382,7 @@ function installPlugin() {
 
   private $varsKeys = array_keys($vars);
 
-  // $commands{<cli-option>} = [<description>, <function>, <needs-ldap-config>];
-  private $commands = [];
-  $commands["--check-plugin-exist"]   = ["Checking if plugins exist",                     /*check:\*/checkPluginExistence];
-  $commands["--install-plugin"]       = ["Installing FusionDirectory's plugins",            /*check:\*/installPlugin];
-  $commands["--only-register"]        = ["Only register inside LDAP",          /*check:\*/onlyRegister];
-  $commands["--list-plugins"]         = ["List installed FusionDirectory plugins",        /*check:\*/listPlugins];
-  private $usage = 0;
+   private $usage = 0;
 
   setVars();
 
