@@ -49,7 +49,6 @@ class Setup extends LdapApplication
       'fd_config_dir'     => '/etc/fusiondirectory',
       'fd_smarty_path'    => '/usr/share/php/smarty3/Smarty.class.php',
       'fd_spool_dir'      => '/var/spool/fusiondirectory',
-      'ldap_conf'         => '/etc/ldap/ldap.conf',
       'config_file'       => 'fusiondirectory.conf',
       'secrets_file'      => 'fusiondirectory.secrets',
       'locale_dir'        => 'locale',
