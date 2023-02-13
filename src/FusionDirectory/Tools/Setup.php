@@ -21,16 +21,16 @@
 
 namespace FusionDirectory\Tools;
 
-require 'FusionDirectory/Cli/LdapApplication.php';
-require 'FusionDirectory/Cli/VarHandling.php';
-
 use \FusionDirectory\Ldap;
+use \FusionDirectory\Cli;
 
 /**
  * fusiondirectory-setup tool, which provides useful commands to inspect or fix LDAP data and FusionDirectory installation
  */
 class Setup extends LdapApplication
 {
+
+  // Actually calling the VarHandling Trait from CLI libraries.	
   use VarHandling;
 
   protected const CONFIGRDN = 'cn=config,ou=fusiondirectory';
