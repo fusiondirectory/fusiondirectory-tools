@@ -22,9 +22,7 @@
 
 namespace FusionDirectory\Tools;
 
-require 'FusionDirectory/Ldap/autoload.php';
-require 'FusionDirectory/Cli/autoload.php';
-require 'FusionDirectory/Tools/autoload.php';
+require '/usr/share/php/FusionDirectory/autoloader.php';
 
 $application = new PluginsManager();
 
