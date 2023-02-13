@@ -35,7 +35,7 @@ class PluginsManager extends Cli\Application
   {
     parent::__construct();
 
-    // List mandatory options and available actions 
+    // List mandatory options and available actions
     /* set-fd_home=FD PATH' : path of fusiondirectory installtion */
     /* plugins-archive=SRC_PATH : path of directory ( or gz archive) of plugins to scan */
     /* plugin-name=plugin name : name of plugin ( contain in control.yaml file) */
@@ -66,40 +66,6 @@ class PluginsManager extends Cli\Application
       ],
     ];
 
-    $this->pluginmanagementmapping = [
-      'cn'                              => 'information:name',
-      'description'                     => 'information:description',
-      'fdPluginInfoVersion'             => 'information:version',
-      'fdPluginInfoAuthors'             => 'information:authors',
-      'fdPluginInfoStatus'              => 'information:status',
-      'fdPluginInfoScreenshotUrl'       => 'information:screenshotUrl',
-      'fdPluginInfoLogoUrl'             => 'information:logoUrl',
-      'fdPluginInfoTags'                => 'information:tags',
-      'fdPluginInfoLicence'             => 'information:license',
-      'fdPluginInfoOrigin'              => 'information:origin',
-      'fdPluginSupportProvider'         => 'support:provider',
-      'fdPluginSupportHomeUrl'          => 'support:homeUrl',
-      'fdPluginSupportTicketUrl'        => 'support:ticketUrl',
-      'fdPluginSupportDiscussionUrl'    => 'support:discussionUrl',
-      'fdPluginSupportDownloadUrl'      => 'support:downloadUrl',
-      'fdPluginSupportSchemaUrl'        => 'support:schemaUrl',
-      'fdPluginSupportContractUrl'      => 'support:contractUrl',
-      'fdPluginReqFdVersion'            => 'requirement:fdVersion',
-      'fdPluginReqPhpVersion'           => 'requirement:phpVersion',
-      'fdPluginReqPlugins'              => 'requirement:plugins',
-      'fdPluginContentPhpClass'         => 'content:phpClassList',
-      'fdPluginContentLdapObject'       => 'content:ldapObjectList',
-      'fdPluginContentLdapAttributes'   => 'content:ldapAttributeList',
-      'fdPluginContentFileList'         => 'content:fileList',
-    ];
-    
-    $this->configrdn       = "cn=config,ou=fusiondirectory";
-    $this->configpluginrdn = "ou=plugins";
-    $this->plugin_types    = ['addons', 'admin', 'personal'];
-    $this->plugin_name     = NULL;
-    $this->plugins_archive = NULL;
-
-    $this->plugin_register_only = 0;
   }
 
   /**
@@ -124,20 +90,20 @@ class PluginsManager extends Cli\Application
         ($this->getopt['saslauthzid'][0] ?? '')
       );
     }
-    
+
     // Call from CLI run method
     $this->runCommands();
   }
 
   // function that add plugin record
-  public function addPluginRecord() {
-
+  public function addPluginRecord ()
+  {
     // Load the information from the yaml file
 
     // Verify if the branch for plugins already exist and create it if not.
 
     // Collect and arrange the info received by the yaml file.
-    
+
     // Create the proper CN
     $dn = "cn=".$pluginInfo['information']['name'].",".$configpluginrdn.",ou=fusiondirectory,".$base;
 
@@ -145,4 +111,4 @@ class PluginsManager extends Cli\Application
     // Create the record for the plugin.
   }
 
-} 
+}

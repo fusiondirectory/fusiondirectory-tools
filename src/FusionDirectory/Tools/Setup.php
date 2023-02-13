@@ -27,11 +27,11 @@ use \FusionDirectory\Cli;
 /**
  * fusiondirectory-setup tool, which provides useful commands to inspect or fix LDAP data and FusionDirectory installation
  */
-class Setup extends LdapApplication
+class Setup extends Cli\LdapApplication
 {
 
-  // Actually calling the VarHandling Trait from CLI libraries.	
-  use VarHandling;
+  // Actually calling the VarHandling Trait from CLI libraries.
+  use Cli\VarHandling;
 
   protected const CONFIGRDN = 'cn=config,ou=fusiondirectory';
 
