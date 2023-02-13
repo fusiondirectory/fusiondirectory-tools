@@ -55,7 +55,7 @@ class PluginsManager extends Cli\Application
       ],
       'remove-plugin'  => [
         'help'        => 'List installed FusionDirectory plugins',
-        'command'     => 'removePlugins',
+        'command'     => 'removePlugin',
       ],
       'list-plugins'  => [
         'help'        => 'List installed FusionDirectory plugins',
@@ -109,6 +109,22 @@ class PluginsManager extends Cli\Application
 
     // Verifying if the record of the plugin already exists and delete it.
     // Create the record for the plugin.
+  }
+
+  public function deletePluginRecord ()
+  {
+  }
+
+  public function installPlugin ()
+  {
+  }
+  
+  public function removePlugin ()
+  {
+  }
+  
+  public function listPlugins ()
+  {
   }
 
 }
