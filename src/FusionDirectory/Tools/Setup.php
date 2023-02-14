@@ -970,7 +970,7 @@ EOF;
     }
       echo "Starting password encryption\n";
       echo "* Generating random master key\n";
-      $masterKey = \FusionDirectory\Core\SecretBox::generateSecretKey();
+      $masterKey = SecretBox::generateSecretKey();
       echo "* Creating \"$fdSecretsFile\"\n";
       $secretsFile = new \SplFileObject($fdSecretsFile, 'w');
       $secretsFile->fwrite('RequestHeader set FDKEY '.base64_encode($masterKey)."\n");
@@ -988,7 +988,7 @@ EOF;
     foreach ($xml->main->location as $loc) {
         $ref = $loc->referral[0];
         echo '* Encrypting FusionDirectory password for "'.$ref['adminDn'].'"'."\n";
-        $ref['adminPassword'] = \FusionDirectory\Core\SecretBox::encrypt($ref['adminPassword'], $masterKey);
+        $ref['adminPassword'] = SecretBox::encrypt($ref['adminPassword'], $masterKey);
     }
 
       echo '* Saving modified "'.$fdConfigFile.'"'."\n";

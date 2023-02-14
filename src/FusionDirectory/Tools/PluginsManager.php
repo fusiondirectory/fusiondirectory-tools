@@ -37,8 +37,8 @@ class PluginsManager extends Cli\Application
     // Variables to be set during script calling.
     $this->vars = [
       'fd_home'         => '/usr/share/fusiondirectory',
-      'plugin_archive'    => NULL,
-      'plugin_name'     => NULL
+      'plugin_archive'    => '/path/to/archive',
+      'plugin_name'     => 'plugin_name'
     ];
 
     // Options available during script calling.
