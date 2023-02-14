@@ -49,8 +49,8 @@ create_phpstan_rapport:
     - test -d /usr/share/php/FusionDirectory/ && rm -Rf ../usr/share/php/FusionDirectory/
     - mkdir /usr/share/php/FusionDirectory/
     - tar xfv ./fusiondirectory-integrator.tar.gz
-    - mv ./fusiondirectory-integrator/src/ /usr/share/php/FusionDirectory/
-    - rm -Rf ./fusiondirectory-integrator.tar.gz ./fusiondirectory-integrator/
+    - mv ./fusiondirectory-integrator-0.9-dev/src/* /usr/share/php/FusionDirectory/
+    - rm -Rf ./fusiondirectory-integrator.tar.gz ./fusiondirectory-integrator-0.9-dev/
     - /root/.composer/vendor/bin/phpstan analyse -c phpstan.neon
 
 build-tarballs:
