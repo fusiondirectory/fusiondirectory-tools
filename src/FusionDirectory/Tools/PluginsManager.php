@@ -17,7 +17,7 @@
   You should have received a copy of the GNU General Public License
   along with this program; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
-*/
+ */
 
 namespace FusionDirectory\Tools;
 
@@ -26,45 +26,52 @@ use \FusionDirectory\Ldap;
 
 class PluginsManager extends Cli\Application
 {
-  /**
-   * @var Ldap\Link
-   */
-  protected $ldap;
+
+  // Actually calling the VarHandling Trait from CLI libraries.
+  use Cli\VarHandling;
 
   public function __construct ()
   {
     parent::__construct();
 
-    // List mandatory options and available actions
-    /* set-fd_home=FD PATH' : path of fusiondirectory installtion */
-    /* plugins-archive=SRC_PATH : path of directory ( or gz archive) of plugins to scan */
-    /* plugin-name=plugin name : name of plugin ( contain in control.yaml file) */
-
-    $this->options  = [
-      'register-plugin'  => [
-        'help'        => 'Checking if plugins exists',
-        'command'     => 'addPluginRecord',
-      ],
-      'unregister-plugin'  => [
-        'help'        => 'Installing FusionDirectory Plugins',
-        'command'     => 'deletePluginRecord',
-      ],
-      'install-plugin'  => [
-        'help'        => 'Only register inside LDAP',
-        'command'     => 'installPlugin',
-      ],
-      'remove-plugin'  => [
-        'help'        => 'List installed FusionDirectory plugins',
-        'command'     => 'removePlugin',
-      ],
-      'list-plugins'  => [
-        'help'        => 'List installed FusionDirectory plugins',
-        'command'     => 'listPlugins',
-      ],
-      'help'          => [
-        'help'        => 'Show this help',
-      ],
+    // Variables to be set during script calling.
+    $this->vars = [
+      'fd_home'         => '/usr/share/fusiondirectory',
+      'plugin_archive'    => NULL,
+      'plugin_name'     => NULL
     ];
+
+    // Options available during script calling.
+    $this->options  = array_merge(
+      // Coming from Trait varHandling, adds set and list vars.
+      $this->getVarOptions(),
+      $this->options  = [
+        'register-plugin'  => [
+          'help'        => 'Checking if plugins exists',
+          'command'     => 'addPluginRecord',
+        ],
+        'unregister-plugin'  => [
+          'help'        => 'Installing FusionDirectory Plugins',
+          'command'     => 'deletePluginRecord',
+        ],
+        'install-plugin'  => [
+          'help'        => 'Only register inside LDAP',
+          'command'     => 'installPlugin',
+        ],
+        'remove-plugin'  => [
+          'help'        => 'List installed FusionDirectory plugins',
+          'command'     => 'removePlugin',
+        ],
+        'list-plugins'  => [
+          'help'        => 'List installed FusionDirectory plugins',
+          'command'     => 'listPlugins',
+        ],
+        'help'          => [
+          'help'        => 'Show this help',
+        ],
+      ],
+      $this->options
+    );
 
   }
 
@@ -76,20 +83,6 @@ class PluginsManager extends Cli\Application
   public function run (array $argv): void
   {
     parent::run($argv);
-
-    $this->ldap = new Ldap\Link($this->getopt['ldapuri'][0] ?? 'ldapi:///');
-    if ($this->getopt['simplebind'] > 0) {
-      $this->ldap->bind(($this->getopt['binddn'][0] ?? ''), ($this->getopt['bindpwd'][0] ?? ''));
-    } else {
-      $this->ldap->saslBind(
-        ($this->getopt['binddn'][0] ?? ''),
-        ($this->getopt['bindpwd'][0] ?? ''),
-        ($this->getopt['saslmech'][0] ?? 'EXTERNAL'),
-        ($this->getopt['saslrealm'][0] ?? ''),
-        ($this->getopt['saslauthcid'][0] ?? ''),
-        ($this->getopt['saslauthzid'][0] ?? '')
-      );
-    }
 
     // Call from CLI run method
     $this->runCommands();
@@ -105,7 +98,6 @@ class PluginsManager extends Cli\Application
     // Collect and arrange the info received by the yaml file.
 
     // Create the proper CN
-    $dn = "cn=".$pluginInfo['information']['name'].",".$configpluginrdn.",ou=fusiondirectory,".$base;
 
     // Verifying if the record of the plugin already exists and delete it.
     // Create the record for the plugin.
@@ -118,11 +110,11 @@ class PluginsManager extends Cli\Application
   public function installPlugin ()
   {
   }
-  
+
   public function removePlugin ()
   {
   }
-  
+
   public function listPlugins ()
   {
   }
