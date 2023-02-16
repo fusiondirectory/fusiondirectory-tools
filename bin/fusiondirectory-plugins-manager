@@ -24,6 +24,6 @@ namespace FusionDirectory\Tools;
 
 require '/usr/share/php/FusionDirectory/autoloader.php';
 
-$application = new InsertSchema();
+$application = new PluginsManager();
 
 $application->run($argv);

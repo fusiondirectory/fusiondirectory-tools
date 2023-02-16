@@ -1,37 +1,37 @@
 <?php
 /*
-  This code is part of FusionDirectory (https://www.fusiondirectory.org/)
+    This code is part of FusionDirectory (https://www.fusiondirectory.org/)
 
-  Copyright (C) 2020-2021 FusionDirectory
+    Copyright (C) 2020-2021 FusionDirectory
 
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation; either version 2 of the License, or
-  (at your option) any later version.
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-  This program is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
-*/
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+ */
 
 namespace FusionDirectory\Tools;
 
-require 'FusionDirectory/Cli/LdapApplication.php';
-require 'FusionDirectory/Cli/VarHandling.php';
-
 use \FusionDirectory\Ldap;
+use \FusionDirectory\Cli;
 
 /**
  * fusiondirectory-setup tool, which provides useful commands to inspect or fix LDAP data and FusionDirectory installation
  */
-class Setup extends LdapApplication
+class Setup extends Cli\LdapApplication
 {
-  use VarHandling;
+
+  // Actually calling the VarHandling Trait from CLI libraries.
+  use Cli\VarHandling;
 
   protected const CONFIGRDN = 'cn=config,ou=fusiondirectory';
 
@@ -62,6 +62,7 @@ class Setup extends LdapApplication
     parent::__construct();
 
     $this->options  = array_merge(
+      // Coming from Trait varHandling
       $this->getVarOptions(),
       [
         'write-vars' => [
@@ -954,10 +955,6 @@ EOF;
    */
   protected function cmdEncryptPasswords (): void
   {
-    if (!class_exists('\FusionDirectory\Core\SecretBox')) {
-      /* Temporary hack waiting for core namespace/autoload refactor */
-      require_once($this->vars['fd_home'].'/include/SecretBox.inc');
-    }
     $fdConfigFile   = $this->vars['fd_config_dir'].'/'.$this->vars['config_file'];
     $fdSecretsFile  = $this->vars['fd_config_dir'].'/'.$this->vars['secrets_file'];
     if (!file_exists($fdConfigFile)) {
@@ -968,7 +965,7 @@ EOF;
     }
     echo "Starting password encryption\n";
     echo "* Generating random master key\n";
-    $masterKey = \FusionDirectory\Core\SecretBox::generateSecretKey();
+    $masterKey = Cli\SecretBox::generateSecretKey();
     echo "* Creating \"$fdSecretsFile\"\n";
     $secretsFile = new \SplFileObject($fdSecretsFile, 'w');
     $secretsFile->fwrite('RequestHeader set FDKEY '.base64_encode($masterKey)."\n");
@@ -986,7 +983,7 @@ EOF;
     foreach ($xml->main->location as $loc) {
       $ref = $loc->referral[0];
       echo '* Encrypting FusionDirectory password for "'.$ref['adminDn'].'"'."\n";
-      $ref['adminPassword'] = \FusionDirectory\Core\SecretBox::encrypt($ref['adminPassword'], $masterKey);
+      $ref['adminPassword'] = Cli\SecretBox::encrypt($ref['adminPassword'], $masterKey);
     }
 
     echo '* Saving modified "'.$fdConfigFile.'"'."\n";
