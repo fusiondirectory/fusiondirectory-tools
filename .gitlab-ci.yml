@@ -1,9 +1,7 @@
 stages:
   - lint
   - codestyle
-  - manpages
   - tarballs
-  - trigger
 
 ## Stage lint
 
@@ -36,21 +34,18 @@ create_php_code_sniffer_rapport:
 
 # phpstan
 create_phpstan_rapport:
-  image: registry.fusiondirectory.org/fusiondirectory/fd/phpstan:buster
+  image: registry.fusiondirectory.org/fusiondirectory/fd/phpstan-cli:buster
   stage: codestyle
   only:
     - branches
   script:
     - test -d ../dev-tools/ && rm -Rf ../dev-tools/
     - git clone --depth 1 https://gitlab.fusiondirectory.org/fusiondirectory/dev-tools.git ../dev-tools
-    - cp ../dev-tools/phpstan/fusiondirectory-tools/*.neon .
-    - apt install --force-yes -y curl
-    - curl "https://gitlab.fusiondirectory.org/api/v4/projects/572/jobs/artifacts/0.9-dev/raw/fusiondirectory-integrator-0.9-dev.tar.gz?job=build-tarballs" -o fusiondirectory-integrator.tar.gz
-    - test -d /usr/share/php/FusionDirectory/ && rm -Rf ../usr/share/php/FusionDirectory/
+    - curl "https://gitlab.fusiondirectory.org/api/v4/projects/$FD_INTEGRATOR_ID/jobs/artifacts/$BRANCH/raw/fusiondirectory-integrator-$VERSION.tar.gz?job=build-tarballs" -o fusiondirectory-integrator.tar.gz
     - mkdir /usr/share/php/FusionDirectory/
-    - tar xfv ./fusiondirectory-integrator.tar.gz
-    - mv ./fusiondirectory-integrator-0.9-dev/src/* /usr/share/php/FusionDirectory/
-    - rm -Rf ./fusiondirectory-integrator.tar.gz ./fusiondirectory-integrator-0.9-dev/
+    - tar -xvzf ./fusiondirectory-integrator.tar.gz
+    - mv ./fusiondirectory-integrator-$VERSION/src/* /usr/share/php/FusionDirectory/ 
+    - cp ../dev-tools/phpstan/fusiondirectory-tools/*.neon .
     - /root/.composer/vendor/bin/phpstan analyse -c phpstan.neon
 
 build-tarballs:
@@ -58,13 +53,13 @@ build-tarballs:
   only:
     - main
   script:
-    - mkdir ../fusiondirectory-tools-master/
-    - mv ./* ../fusiondirectory-tools-master/
-    - mv  ../fusiondirectory-tools-master/ ./
-    - tar -cvzf fusiondirectory-tools-master.tar.gz *
+    - mkdir ../fusiondirectory-tools/
+    - mv ./* ../fusiondirectory-tools/
+    - mv  ../fusiondirectory-tools/ ./
+    - tar -cvzf fusiondirectory-tools.tar.gz *
   artifacts:
     paths:
-      - fusiondirectory-tools-master.tar.gz
+      - fusiondirectory-tools.tar.gz
     expire_in: 30d
 
 build-release:
