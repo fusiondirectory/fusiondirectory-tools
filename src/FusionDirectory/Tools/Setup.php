@@ -64,6 +64,7 @@ class Setup extends Cli\LdapApplication
     $this->options  = array_merge(
       // Coming from Trait varHandling
       $this->getVarOptions(),
+      // Careful, an option ending by : will receive args passed by user.
       [
         'write-vars' => [
           'help'    => 'Choose FusionDirectory Directories',
@@ -1025,100 +1026,6 @@ EOF;
       printf(" %-15s%s\n", 'Bind password', $location['bind_pwd']);
       printf(" %-15s%s\n", 'TLS',           ($location['tls'] ? 'on' : 'off'));
     }
-  }
-
-  /**
-   * Install all the FD's plugins from a directory
-   * @param array<string> $paths
-   */
-  protected function cmdInstallPlugins (array $paths): void
-  {
-    if (count($paths) != 1) {
-      throw new \Exception('Please provide one and only one path to fetch plugins from');
-    }
-    $path = $paths[0];
-    if (!file_exists($path)) {
-      throw new \Exception($path.' does not exist');
-    }
-
-    if (is_dir($path)) {
-      $dir = $path;
-    } else {
-      /* Check the archive format */
-      if (preg_match('/^.*\/(.+).tar.gz$/', $path, $m)) {
-        $name = $m[1];
-      } else {
-        throw new \Exception('Unkwnow archive '.$path);
-      }
-
-      /* Where the extract files will go */
-      $tmpPluginsDir = '/tmp';
-
-      printf('Extracting plugins into "%s", please wait…'."\n", $tmpPluginsDir.'/'.$name);
-
-      /* Decompress from gz */
-      $p = new \PharData($path);
-      $p->extractTo($tmpPluginsDir);
-
-      $dir = $tmpPluginsDir.'/'.$name;
-    }
-
-    echo "Available plugins:\n";
-
-    $Directory = new \FilesystemIterator($dir);
-
-    $i = 1;
-    $plugins = [];
-    foreach ($Directory as $item) {
-      /** @var \SplFileInfo $item */
-      if ($item->isDir()) {
-        $plugins[$i] = $item;
-        printf("%d: %s\n", $i, $item->getBasename());
-        $i++;
-      }
-    }
-
-    $userInput = $this->askUserInput('Which plugins do you want to install (use "all" to install all plugins)?');
-    $pluginsToInstall = preg_split('/\s+/', $userInput);
-    if ($pluginsToInstall === FALSE) {
-      throw new \Exception('Failed to parse "'.$userInput.'"');
-    }
-
-    foreach ($plugins as $i => $pluginPath) {
-      if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
-        echo 'Installing plugin '.$pluginPath->getBasename()."\n";
-      } else {
-        continue;
-      }
-
-      $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
-
-      $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
-
-      $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
-
-      $this->copyDirectory($pluginPath->getPathname().'/personal', $this->vars['fd_home'].'/plugins/personal');
-
-      $this->copyDirectory($pluginPath->getPathname().'/html', $this->vars['fd_home'].'/html');
-
-      $this->copyDirectory($pluginPath->getPathname().'/ihtml', $this->vars['fd_home'].'/ihtml');
-
-      $this->copyDirectory($pluginPath->getPathname().'/include', $this->vars['fd_home'].'/include');
-
-      $this->copyDirectory($pluginPath->getPathname().'/contrib/openldap', $this->vars['fd_home'].'/contrib/openldap');
-
-      $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginPath->getBasename());
-
-      $this->copyDirectory($pluginPath->getPathname().'/contrib/doc', $this->vars['fd_home'].'/contrib/doc');
-
-      $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginPath->getBasename().'/locale');
-    }
-
-    /* Finally update FusionDirectory's class.cache and locales */
-    echo 'Updating class.cache'."\n";
-    $this->cmdUpdateCache();
-    echo 'Updating locales'."\n";
-    $this->cmdUpdateLocales();
   }
 
   /**

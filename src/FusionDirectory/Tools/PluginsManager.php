@@ -37,6 +37,7 @@ class PluginsManager extends Cli\Application
     // Variables to be set during script calling.
     $this->vars = [
       'fd_home'         => '/usr/share/fusiondirectory',
+      'fd_config_dir'     => '/etc/fusiondirectory',
       'plugin_archive'    => '/path/to/archive',
       'plugin_name'     => 'plugin_name'
     ];
@@ -45,21 +46,22 @@ class PluginsManager extends Cli\Application
     $this->options  = array_merge(
       // Coming from Trait varHandling, adds set and list vars.
       $this->getVarOptions(),
+      // Careful, an option ending by : will receive args passed by user.
       $this->options  = [
         'register-plugin'  => [
-          'help'        => 'Checking if plugins exists',
+          'help'        => 'Register plugin within LDAP',
           'command'     => 'addPluginRecord',
         ],
         'unregister-plugin'  => [
-          'help'        => 'Installing FusionDirectory Plugins',
+          'help'        => 'Delete entry within LDAP',
           'command'     => 'deletePluginRecord',
         ],
-        'install-plugin'  => [
-          'help'        => 'Only register inside LDAP',
+        'install-plugin:'  => [
+          'help'        => 'Install plugin within FD and register it within LDAP',
           'command'     => 'installPlugin',
         ],
         'remove-plugin'  => [
-          'help'        => 'List installed FusionDirectory plugins',
+          'help'        => 'Remove plugin from FD and LDAP',
           'command'     => 'removePlugin',
         ],
         'list-plugins'  => [
@@ -89,7 +91,8 @@ class PluginsManager extends Cli\Application
   }
 
   // function that add plugin record
-  public function addPluginRecord ()
+  // $params Path to the yaml file to be read.
+  public function addPluginRecord (string $path) : bool
   {
     // Load the information from the yaml file
 
@@ -101,14 +104,95 @@ class PluginsManager extends Cli\Application
 
     // Verifying if the record of the plugin already exists and delete it.
     // Create the record for the plugin.
+
+    return TRUE;
   }
 
   public function deletePluginRecord ()
   {
+
   }
 
-  public function installPlugin ()
+  public function installPlugin (array $paths)
   {
+    if (count($paths) != 1) {
+      throw new \Exception('Please provide one and only one path to fetch plugins from');
+    }
+
+    $path = $paths[0];
+    if (!file_exists($path)) {
+      throw new \Exception($path.' does not exist');
+    }
+
+    if (is_dir($path)) {
+      $dir = $path;
+    } else {
+
+      /* Check the archive format */
+      if (preg_match('/^.*\/(.+).tar.gz$/', $path, $m)) {
+        $name = $m[1];
+      } else {
+        throw new \Exception('Unkwnow archive '.$path);
+      }
+
+      /* Where the extract files will go */
+      $tmpPluginsDir = '/tmp';
+
+      printf('Extracting plugins into "%s", please wait…'."\n", $tmpPluginsDir.'/'.$name);
+
+      /* Decompress from gz */
+      $p = new \PharData($path);
+      $p->extractTo($tmpPluginsDir);
+
+      $dir = $tmpPluginsDir.'/'.$name;
+    }
+
+    echo "Available plugins:\n";
+
+    $Directory = new \FilesystemIterator($dir);
+
+    $i = 1;
+    $plugins = [];
+    foreach ($Directory as $item) {
+      /** @var \SplFileInfo $item */
+      if ($item->isDir()) {
+        $plugins[$i] = $item;
+        printf("%d: %s\n", $i, $item->getBasename());
+        $i++;
+      }
+    }
+
+    $userInput = $this->askUserInput('Which plugins do you want to install (use "all" to install all plugins)?');
+    $pluginsToInstall = preg_split('/\s+/', $userInput);
+    if ($pluginsToInstall === FALSE) {
+      throw new \Exception('Failed to parse "'.$userInput.'"');
+    }
+
+    foreach ($plugins as $i => $pluginPath) {
+
+      // Add verification method if control.yaml is present in root plugin folder
+      if (!file_exists($pluginPath."/control.yaml")) {
+        throw new \Exception($pluginPath."/control.yaml".' does not exist');
+      }
+      if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
+        echo 'Installing plugin '.$pluginPath->getBasename()."\n";
+      }
+      // Register the plugins within LDAP
+      $this->addPluginRecord($pluginPath."/control.yaml");
+
+      // Move the folders and files to correct directories
+      $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
+      $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
+      $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
+      $this->copyDirectory($pluginPath->getPathname().'/personal', $this->vars['fd_home'].'/plugins/personal');
+      $this->copyDirectory($pluginPath->getPathname().'/html', $this->vars['fd_home'].'/html');
+      $this->copyDirectory($pluginPath->getPathname().'/ihtml', $this->vars['fd_home'].'/ihtml');
+      $this->copyDirectory($pluginPath->getPathname().'/include', $this->vars['fd_home'].'/include');
+      $this->copyDirectory($pluginPath->getPathname().'/contrib/openldap', $this->vars['fd_home'].'/contrib/openldap');
+      $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginPath->getBasename());
+      $this->copyDirectory($pluginPath->getPathname().'/contrib/doc', $this->vars['fd_home'].'/contrib/doc');
+      $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginPath->getBasename().'/locale');
+    }
   }
 
   public function removePlugin ()
@@ -118,5 +202,34 @@ class PluginsManager extends Cli\Application
   public function listPlugins ()
   {
   }
+
+  public function copyDirectory (string $source, string $dest): void
+  {
+    if ($this->verbose()) {
+      printf('Copy %s to %s'."\n", $source, $dest);
+    }
+
+    if (file_exists($source)) {
+      if (!file_exists($dest)) {
+        if (mkdir($dest, 0755, TRUE) === FALSE) {
+          throw new \Exception('Unable to create "'.$dest.'"');
+        }
+      }
+
+      $Directory = new \FilesystemIterator($source);
+
+      foreach ($Directory as $file) {
+        /** @var \SplFileInfo $file */
+        if ($file->isDir()) {
+          $this->copyDirectory($file->getPathname(), $dest.'/'.$file->getBasename());
+        } else {
+          if (copy($file->getPathname(), $dest.'/'.$file->getBasename()) === FALSE) {
+            throw new \Exception('Unable to copy '.$file->getPathname().' to '.$dest.'/'.$file->getBasename());
+          }
+        }
+      }
+    }
+  }
+
 
 }
