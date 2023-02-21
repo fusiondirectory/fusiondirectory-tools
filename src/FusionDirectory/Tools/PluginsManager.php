@@ -30,6 +30,9 @@ class PluginsManager extends Cli\Application
   // Actually calling the VarHandling Trait from CLI libraries.
   use Cli\VarHandling;
 
+  // Definition of variables
+  protected $ldap;
+
   public function __construct ()
   {
     parent::__construct();
@@ -90,14 +93,29 @@ class PluginsManager extends Cli\Application
     $this->runCommands();
   }
 
+  // Following method is extracted from setup and should be set in a library.
+
+  protected function connectLdap (array $config)
+  {
+    $this->ldap = new Ldap\Link($config['uri']);
+    $this->ldap->bind($config['bind_dn'], $config['bind_pwd']);
+  }
+
   // function that add plugin record
   // $params Path to the yaml file to be read.
   public function addPluginRecord (string $path) : bool
   {
     // Load the information from the yaml file
+    $pluginInfo = yaml_parse_file($path);
 
-    // Verify if the branch for plugins already exist and create it if not.
+    // Instantiation of setup to return FD configurations.
+    $setup = new Setup();
+    $conf = $setup->loadFusionDirectoryConfigurationFile();
 
+    $this->connectLdap($conf['default']);
+    if (!$this->branchExist($conf['default'])) {
+      $this->createBranch($conf['default']);
+    }
     // Collect and arrange the info received by the yaml file.
 
     // Create the proper CN
@@ -106,6 +124,35 @@ class PluginsManager extends Cli\Application
     // Create the record for the plugin.
 
     return TRUE;
+  }
+
+  protected function branchExist (array $conf): bool
+  {
+    // Verify if the branch for plugins already exist and create it if not.
+    try {
+      $branchList = $this->ldap->search('ou=plugins,'.$conf['base'], '(objectClass=*)', [], 'base');
+    } catch (Ldap\Exception $e) {
+      if ($e->getCode() === 32) {
+        printf('Branch %s does not exists !'."\n", 'ou=plugins');
+        return FALSE;
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Create ou=plugins LDAP branch
+   */
+  protected function createBranch (array $conf): void
+  {
+    printf('Creating branch %s'."\n", 'ou=plugins');
+    $branchAdd = $this->ldap->add(
+      'ou=plugins'.','.$conf['base'],
+      [
+        'ou'          => 'plugins',
+        'objectClass' => 'organizationalUnit',
+      ]
+    );
   }
 
   public function deletePluginRecord ()
@@ -175,7 +222,7 @@ class PluginsManager extends Cli\Application
         throw new \Exception($pluginPath."/control.yaml".' does not exist');
       }
       if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
-        echo 'Installing plugin '.$pluginPath->getBasename()."\n";
+        echo 'Installing plugin '.$pluginPath->getBasename().'.'."\n";
       }
       // Register the plugins within LDAP
       $this->addPluginRecord($pluginPath."/control.yaml");
@@ -230,6 +277,29 @@ class PluginsManager extends Cli\Application
       }
     }
   }
+  /**
+   * Check that an LDAP branch exists
+   */
+  protected function branchExists (string $dn): bool
+  {
+    try {
+      /* Search for branch */
+      $branchList = $this->ldap->search($dn, '(objectClass=*)', [], 'base');
+      if ($branchList->errcode === 32) {
+        return FALSE;
+      }
+      $branchList->assert();
+    } catch (Ldap\Exception $e) {
+      if ($e->getCode() === 32) {
+        if ($this->verbose()) {
+          printf('Branch %s does not exists'."\n", $dn);
+        }
+        return FALSE;
+      }
+      throw $e;
+    }
 
+    return ($branchList->count() > 0);
+  }
 
 }

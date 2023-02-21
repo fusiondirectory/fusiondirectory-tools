@@ -157,7 +157,7 @@ class Setup extends Cli\LdapApplication
    * Load locations information from FusionDirectory configuration file
    * @return array<array{tls: bool, uri: string, base: string, bind_dn: string, bind_pwd: string}> locations
    */
-  protected function loadFusionDirectoryConfigurationFile (): array
+  public function loadFusionDirectoryConfigurationFile (): array
   {
     $this->configFilePath   = $this->vars['fd_config_dir'].'/'.$this->vars['config_file'];
     $this->secretsFilePath  = $this->vars['fd_config_dir'].'/'.$this->vars['secrets_file'];
@@ -308,7 +308,7 @@ class Setup extends Cli\LdapApplication
   /**
    * Check that an LDAP branch exists
    */
-  protected function branchExists (string $dn): bool
+  public function branchExists (string $dn): bool
   {
     try {
       /* Search for branch */
