@@ -113,31 +113,35 @@ class PluginsManager extends Cli\Application
     $conf = $setup->loadFusionDirectoryConfigurationFile();
 
     $this->connectLdap($conf['default']);
-    if (!$this->branchExist($conf['default'])) {
+    if (!$this->branchExist('ou=plugins,'.$conf['default']['base'])) {
       $this->createBranch($conf['default']);
     }
     // Collect and arrange the info received by the yaml file.
 
     // Create the proper CN
+    $pluginDN = "cn=".$pluginInfo['information']['name'].",ou=plugins,ou=fusiondirectory,".$conf['default']['base'];
 
     // Verifying if the record of the plugin already exists and delete it.
+    if ($this->branchExist($pluginDN)) {
+      echo 'Branch : ' .$pluginDN.' already exists' .PHP_EOL;
+    }
     // Create the record for the plugin.
 
     return TRUE;
   }
 
-  protected function branchExist (array $conf): bool
+  protected function branchExist (string $dn): bool
   {
     // Verify if the branch for plugins already exist and create it if not.
     try {
-      $branchList = $this->ldap->search('ou=plugins,'.$conf['base'], '(objectClass=*)', [], 'base');
+      $branchList = $this->ldap->search($dn, '(objectClass=*)', [], 'base');
     } catch (Ldap\Exception $e) {
       if ($e->getCode() === 32) {
-        printf('Branch %s does not exists !'."\n", 'ou=plugins');
+        printf('Branch %s does not exists !'."\n", $dn);
         return FALSE;
       }
     }
-    return TRUE;
+    return ($branchList->count() > 0);
   }
 
   /**
@@ -147,7 +151,7 @@ class PluginsManager extends Cli\Application
   {
     printf('Creating branch %s'."\n", 'ou=plugins');
     $branchAdd = $this->ldap->add(
-      'ou=plugins'.','.$conf['base'],
+      'ou=plugins,'.$conf['base'],
       [
         'ou'          => 'plugins',
         'objectClass' => 'organizationalUnit',
@@ -252,9 +256,7 @@ class PluginsManager extends Cli\Application
 
   public function copyDirectory (string $source, string $dest): void
   {
-    if ($this->verbose()) {
-      printf('Copy %s to %s'."\n", $source, $dest);
-    }
+    printf('Copy %s to %s'."\n", $source, $dest);
 
     if (file_exists($source)) {
       if (!file_exists($dest)) {
@@ -266,7 +268,6 @@ class PluginsManager extends Cli\Application
       $Directory = new \FilesystemIterator($source);
 
       foreach ($Directory as $file) {
-        /** @var \SplFileInfo $file */
         if ($file->isDir()) {
           $this->copyDirectory($file->getPathname(), $dest.'/'.$file->getBasename());
         } else {
@@ -276,30 +277,6 @@ class PluginsManager extends Cli\Application
         }
       }
     }
-  }
-  /**
-   * Check that an LDAP branch exists
-   */
-  protected function branchExists (string $dn): bool
-  {
-    try {
-      /* Search for branch */
-      $branchList = $this->ldap->search($dn, '(objectClass=*)', [], 'base');
-      if ($branchList->errcode === 32) {
-        return FALSE;
-      }
-      $branchList->assert();
-    } catch (Ldap\Exception $e) {
-      if ($e->getCode() === 32) {
-        if ($this->verbose()) {
-          printf('Branch %s does not exists'."\n", $dn);
-        }
-        return FALSE;
-      }
-      throw $e;
-    }
-
-    return ($branchList->count() > 0);
   }
 
 }
