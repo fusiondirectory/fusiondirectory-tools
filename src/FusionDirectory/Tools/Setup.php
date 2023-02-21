@@ -629,34 +629,6 @@ class Setup extends Cli\LdapApplication
     }
   }
 
-  /**
-   * Create a directory and copy plugin files in it
-   */
-  protected function copyDirectory (string $source, string $dest): void
-  {
-    if ($this->verbose()) {
-      printf('Copy %s to %s'."\n", $source, $dest);
-    }
-    if (file_exists($source)) {
-      if (!file_exists($dest)) {
-        if (mkdir($dest, 0755, TRUE) === FALSE) {
-          throw new \Exception('Unable to create "'.$dest.'"');
-        }
-      }
-      $Directory = new \FilesystemIterator($source);
-      foreach ($Directory as $file) {
-        /** @var \SplFileInfo $file */
-        if ($file->isDir()) {
-          $this->copyDirectory($file->getPathname(), $dest.'/'.$file->getBasename());
-        } else {
-          if (copy($file->getPathname(), $dest.'/'.$file->getBasename()) === FALSE) {
-            throw new \Exception('Unable to copy '.$file->getPathname().' to '.$dest.'/'.$file->getBasename());
-          }
-        }
-      }
-    }
-  }
-
   /* Commands */
 
   /**
