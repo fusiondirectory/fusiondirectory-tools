@@ -33,6 +33,33 @@ class PluginsManager extends Cli\Application
   // Definition of variables
   protected $ldap;
 
+  private $pluginmanagementmapping = [
+    "cn"                              => "information:name",
+    "description"                     => "information:description",
+    "fdPluginInfoVersion"             => "information:version",
+    "fdPluginInfoAuthors"             => "information:authors",
+    "fdPluginInfoStatus"              => "information:status",
+    "fdPluginInfoScreenshotUrl"       => "information:screenshotUrl",
+    "fdPluginInfoLogoUrl"             => "information:logoUrl",
+    "fdPluginInfoTags"                => "information:tags",
+    "fdPluginInfoLicence"             => "information:license",
+    "fdPluginInfoOrigin"              => "information:origin",
+    "fdPluginSupportProvider"         => "support:provider",
+    "fdPluginSupportHomeUrl"          => "support:homeUrl",
+    "fdPluginSupportTicketUrl"        => "support:ticketUrl",
+    "fdPluginSupportDiscussionUrl"    => "support:discussionUrl",
+    "fdPluginSupportDownloadUrl"      => "support:downloadUrl",
+    "fdPluginSupportSchemaUrl"        => "support:schemaUrl",
+    "fdPluginSupportContractUrl"      => "support:contractUrl",
+    "fdPluginReqFdVersion"            => "requirement:fdVersion",
+    "fdPluginReqPhpVersion"           => "requirement:phpVersion",
+    "fdPluginReqPlugins"              => "requirement:plugins",
+    "fdPluginContentPhpClass"         => "content:phpClassList",
+    "fdPluginContentLdapObject"       => "content:ldapObjectList",
+    "fdPluginContentLdapAttributes"   => "content:ldapAttributeList",
+    "fdPluginContentFileList"         => "content:fileList",
+  ];
+
   public function __construct ()
   {
     parent::__construct();
@@ -116,30 +143,50 @@ class PluginsManager extends Cli\Application
     if (!$this->branchExist('ou=plugins,'.$conf['default']['base'])) {
       $this->createBranch($conf['default']);
     }
-    // Collect and arrange the info received by the yaml file.
 
     // Create the proper CN
-    $pluginDN = "cn=".$pluginInfo['information']['name'].",ou=plugins,ou=fusiondirectory,".$conf['default']['base'];
+    $pluginDN = "cn=".$pluginInfo['information']['name'].",ou=plugins,".$conf['default']['base'];
 
     // Verifying if the record of the plugin already exists and delete it.
     if ($this->branchExist($pluginDN)) {
-      echo 'Branch : ' .$pluginDN.' already exists' .PHP_EOL;
+      echo 'Branch : ' .$pluginDN.' already exists, deleting...' .PHP_EOL;
+      $this->deletePluginRecord($pluginDN);
     }
-    // Create the record for the plugin.
+
+    // Collect and arrange the info received by the yaml file.
+    $obj = ['objectClass' => ['top','fdPlugin']];
+
+    foreach (array_keys($this->pluginmanagementmapping) as $k) {
+      $section = preg_split('/:/', $this->pluginmanagementmapping[$k]);
+      if (isset($pluginInfo[$section[0]][$section[1]])) {
+        $obj[$k] = $pluginInfo[$section[0]][$section[1]];
+      }
+    }
+
+    // register within ldap
+    try {
+      $msg = $this->ldap->add($pluginDN, $obj);
+      $msg->assert();
+    } catch (Ldap\Exception $e) {
+      echo "Error while creating LDAP entries" .PHP_EOL;
+      throw $e;
+    }
 
     return TRUE;
   }
 
   protected function branchExist (string $dn): bool
   {
+    // Initiate variable to be compliant phpstan.
+    $branchList = NULL;
     // Verify if the branch for plugins already exist and create it if not.
     try {
       $branchList = $this->ldap->search($dn, '(objectClass=*)', [], 'base');
     } catch (Ldap\Exception $e) {
       if ($e->getCode() === 32) {
         printf('Branch %s does not exists !'."\n", $dn);
-        return FALSE;
       }
+      return FALSE;
     }
     return ($branchList->count() > 0);
   }
@@ -150,18 +197,28 @@ class PluginsManager extends Cli\Application
   protected function createBranch (array $conf): void
   {
     printf('Creating branch %s'."\n", 'ou=plugins');
-    $branchAdd = $this->ldap->add(
-      'ou=plugins,'.$conf['base'],
-      [
-        'ou'          => 'plugins',
-        'objectClass' => 'organizationalUnit',
-      ]
-    );
+    try {
+      $branchAdd = $this->ldap->add(
+        'ou=plugins,'.$conf['base'],
+        [
+          'ou'          => 'plugins',
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+    } catch (Ldap\Exception $e) {
+      printf('Error while creating branch : %s !'."\n", 'ou=plugins');
+      throw $e;
+    }
   }
 
-  public function deletePluginRecord ()
+  public function deletePluginRecord (string $dn)
   {
-
+    try {
+      $msg = $this->ldap->delete($dn);
+    } catch (Ldap\Exception $e) {
+      printf('Error while deleting branch : %s !'."\n", $dn);
+      throw $e;
+    }
   }
 
   public function installPlugin (array $paths)
