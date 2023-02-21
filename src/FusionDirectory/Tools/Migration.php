@@ -21,17 +21,15 @@
 
 namespace FusionDirectory\Tools;
 
-require 'FusionDirectory/Cli/LdapApplication.php';
-require 'FusionDirectory/Cli/VarHandling.php';
-
 use \FusionDirectory\Ldap;
+use \FusionDirectory\Cli;
 
 /**
  * Tool to migrate data from one FusionDirectory version to the next, if need be
  */
-class Migration extends LdapApplication
+class Migration extends Cli\LdapApplication
 {
-  use VarHandling;
+  use Cli\VarHandling;
 
   public function __construct ()
   {
