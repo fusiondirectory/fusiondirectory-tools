@@ -308,6 +308,32 @@ class PluginsManager extends Cli\Application
 
   public function listPlugins ()
   {
+    $pluginattrs = ['cn','description','fdPluginInfoAuthors','fdPluginInfoVersion','fdPluginSupportHomeUrl','fdPluginInfoStatus','fdPluginSupportProvider','fdPluginInfoOrigin'];
+
+    // Instantiation of setup to return FD configurations.
+    $setup = new Setup();
+    $conf = $setup->loadFusionDirectoryConfigurationFile();
+
+    $this->connectLdap($conf['default']);
+
+    $mesg = $this->ldap->search("ou=plugins,".$conf['default']['base'], "(objectClass=fdPlugin)", $pluginattrs);
+    $mesg->assert();
+
+    // Recuperate only the full DN of the plugin and extract the exact plugin's name.
+    foreach ($mesg as $key => $value) {
+      $count[] = $key;
+      preg_match('/cn=(.*),ou=/', $key, $match);
+      $plugins[] = $match[1];
+    }
+
+    if (isset($count)) {
+        echo "Number of plugins installed : ".count($count). PHP_EOL;
+      if (isset($plugins)) {
+        foreach ($plugins as $plugin) {
+          echo "Plugin : ".$plugin. " is installed" .PHP_EOL;
+        }
+      }
+    }
   }
 
   public function copyDirectory (string $source, string $dest): void
