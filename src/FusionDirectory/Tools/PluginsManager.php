@@ -2,7 +2,7 @@
 /*
   This code is part of ldap-config-manager (https://www.fusiondirectory.org/)
 
-  Copyright (C) 2020  FusionDirectory
+  Copyright (C) 2023  FusionDirectory
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -31,7 +31,8 @@ class PluginsManager extends Cli\Application
   use Cli\VarHandling;
 
   // Definition of variables
-  protected $ldap;
+  protected $ldap; //serving to instantiate ldap object.
+  protected $conf; //serving to instantiate setup object and fetch FD configurations details.
 
   private $pluginmanagementmapping = [
     "cn"                              => "information:name",
@@ -82,7 +83,7 @@ class PluginsManager extends Cli\Application
           'help'        => 'Register plugin within LDAP',
           'command'     => 'addPluginRecord',
         ],
-        'unregister-plugin'  => [
+        'unregister-plugin:'  => [
           'help'        => 'Delete entry within LDAP',
           'command'     => 'deletePluginRecord',
         ],
@@ -121,11 +122,16 @@ class PluginsManager extends Cli\Application
   }
 
   // Following method is extracted from setup and should be set in a library.
-
-  protected function connectLdap (array $config)
+  protected function connectLdap ()
   {
-    $this->ldap = new Ldap\Link($config['uri']);
-    $this->ldap->bind($config['bind_dn'], $config['bind_pwd']);
+    // Instantiation of setup to get FD configurations + avoid if already loaded.
+    if (!is_object($this->ldap)) {
+      $setup = new Setup();
+      $this->conf = $setup->loadFusionDirectoryConfigurationFile();
+
+      $this->ldap = new Ldap\Link($this->conf['default']['uri']);
+      $this->ldap->bind($this->conf['default']['bind_dn'], $this->conf['default']['bind_pwd']);
+    }
   }
 
   // function that add plugin record
@@ -138,22 +144,19 @@ class PluginsManager extends Cli\Application
     }
     $pluginInfo = yaml_parse_file($path[0].'/control.yaml');
 
-    // Instantiation of setup to return FD configurations.
-    $setup = new Setup();
-    $conf = $setup->loadFusionDirectoryConfigurationFile();
+    $this->connectLdap();
 
-    $this->connectLdap($conf['default']);
-    if (!$this->branchExist('ou=plugins,'.$conf['default']['base'])) {
-      $this->createBranch($conf['default']);
+    if (!$this->branchExist('ou=plugins,'.$this->conf['default']['base'])) {
+      $this->createBranchPlugins();
     }
 
     // Create the proper CN
-    $pluginDN = "cn=".$pluginInfo['information']['name'].",ou=plugins,".$conf['default']['base'];
+    $pluginDN = "cn=".$pluginInfo['information']['name'].",ou=plugins,".$this->conf['default']['base'];
 
     // Verifying if the record of the plugin already exists and delete it.
     if ($this->branchExist($pluginDN)) {
       echo 'Branch : ' .$pluginDN.' already exists, re-installing...' .PHP_EOL;
-      $this->deletePluginRecord($pluginDN);
+      $this->deletePluginRecord([$pluginDN]);
     }
 
     // Collect and arrange the info received by the yaml file.
@@ -174,6 +177,7 @@ class PluginsManager extends Cli\Application
       echo "Error while creating LDAP entries" .PHP_EOL;
       throw $e;
     }
+    echo 'Installing : '.$pluginDN.' ...' .PHP_EOL;
 
     return TRUE;
   }
@@ -186,9 +190,7 @@ class PluginsManager extends Cli\Application
     try {
       $branchList = $this->ldap->search($dn, '(objectClass=*)', [], 'base');
     } catch (Ldap\Exception $e) {
-      if ($e->getCode() === 32) {
-        printf('Branch %s does not exists !'."\n", $dn);
-      }
+
       return FALSE;
     }
     return ($branchList->count() > 0);
@@ -197,12 +199,12 @@ class PluginsManager extends Cli\Application
   /**
    * Create ou=plugins LDAP branch
    */
-  protected function createBranch (array $conf): void
+  protected function createBranchPlugins (): void
   {
     printf('Creating branch %s'."\n", 'ou=plugins');
     try {
       $branchAdd = $this->ldap->add(
-        'ou=plugins,'.$conf['base'],
+        'ou=plugins,'.$this->conf['base'],
         [
           'ou'          => 'plugins',
           'objectClass' => 'organizationalUnit',
@@ -214,13 +216,32 @@ class PluginsManager extends Cli\Application
     }
   }
 
-  public function deletePluginRecord (string $dn)
+  // Method which either receive the full DN or the name of the plugin.
+  public function deletePluginRecord (array $dn)
   {
-    try {
-      $msg = $this->ldap->delete($dn);
-    } catch (Ldap\Exception $e) {
-      printf('Error while deleting branch : %s !'."\n", $dn);
-      throw $e;
+    $this->connectLdap();
+    $dn = $dn[0];
+
+    preg_match('/cn=.*,ou.*,dc=/', $dn, $match);
+    if (isset($match[0]) && !empty($match[0])) {
+      try {
+        $msg = $this->ldap->delete($dn);
+        $msg->assert();
+      } catch (Ldap\Exception $e) {
+        printf('Error while deleting branch : %s !'."\n", $dn);
+        throw $e;
+      }
+      printf('Deleted %s successfully.'."\n", $dn);
+    } else {
+      $pluginDN = "cn=".$dn.",ou=plugins,".$this->conf['default']['base'];
+      try {
+        $msg = $this->ldap->delete($pluginDN);
+        $msg->assert();
+      } catch (Ldap\Exception $e) {
+        printf('Error while deleting branch : %s !'."\n", $dn);
+        throw $e;
+      }
+      printf('Deleted %s successfully.'."\n", $dn);
     }
   }
 
@@ -308,15 +329,10 @@ class PluginsManager extends Cli\Application
 
   public function listPlugins ()
   {
+    $this->connectLdap();
     $pluginattrs = ['cn','description','fdPluginInfoAuthors','fdPluginInfoVersion','fdPluginSupportHomeUrl','fdPluginInfoStatus','fdPluginSupportProvider','fdPluginInfoOrigin'];
 
-    // Instantiation of setup to return FD configurations.
-    $setup = new Setup();
-    $conf = $setup->loadFusionDirectoryConfigurationFile();
-
-    $this->connectLdap($conf['default']);
-
-    $mesg = $this->ldap->search("ou=plugins,".$conf['default']['base'], "(objectClass=fdPlugin)", $pluginattrs);
+    $mesg = $this->ldap->search("ou=plugins,".$this->conf['default']['base'], "(objectClass=fdPlugin)", $pluginattrs);
     $mesg->assert();
 
     // Recuperate only the full DN of the plugin and extract the exact plugin's name.
@@ -326,13 +342,15 @@ class PluginsManager extends Cli\Application
       $plugins[] = $match[1];
     }
 
-    if (isset($count)) {
+    if (isset($count) && count($count) !== 0) {
         echo "Number of plugins installed : ".count($count). PHP_EOL;
       if (isset($plugins)) {
         foreach ($plugins as $plugin) {
           echo "Plugin : ".$plugin. " is installed" .PHP_EOL;
         }
       }
+    } else {
+      echo "No plugins installed ..." .PHP_EOL;
     }
   }
 
