@@ -91,7 +91,7 @@ class PluginsManager extends Cli\Application
           'help'        => 'Install plugin within FD and register it within LDAP',
           'command'     => 'installPlugin',
         ],
-        'remove-plugin'  => [
+        'remove-plugin:'  => [
           'help'        => 'Remove plugin from FD and LDAP',
           'command'     => 'removePlugin',
         ],
@@ -280,7 +280,6 @@ class PluginsManager extends Cli\Application
     }
 
     echo "Available plugins:\n";
-
     $Directory = new \FilesystemIterator($dir);
 
     $i = 1;
@@ -308,7 +307,8 @@ class PluginsManager extends Cli\Application
       // Register the plugins within LDAP
       $this->addPluginRecord([$pluginPath]);
 
-      // Move the folders and files to correct directories
+      // Move the folders and files to correct directorie
+      // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
       $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
       $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
       $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
@@ -318,13 +318,28 @@ class PluginsManager extends Cli\Application
       $this->copyDirectory($pluginPath->getPathname().'/include', $this->vars['fd_home'].'/include');
       $this->copyDirectory($pluginPath->getPathname().'/contrib/openldap', $this->vars['fd_home'].'/contrib/openldap');
       $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginPath->getBasename());
-      $this->copyDirectory($pluginPath->getPathname().'/contrib/doc', $this->vars['fd_home'].'/contrib/doc');
       $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginPath->getBasename().'/locale');
     }
   }
 
-  public function removePlugin ()
+  public function removePlugin (array $info)
   {
+    $this->connectLdap();
+
+    try {
+      $mesg = $this->ldap->search("ou=plugins,".$this->conf['default']['base'], "(&(objectClass=fdPlugin)(cn=".$info[0]."))", ['fdPluginContentFileList']);
+      $mesg->assert();
+    } catch (Ldap\Exception $e) {
+      printf('Error while search branch : %s for content file list!'."\n", $info[0]);
+      throw $e;
+    }
+
+    $this->deletePluginRecord($info);
+
+    // Recuperate the filelists
+    foreach ($mesg as $key => $value) {
+      print_r($value);
+    }
   }
 
   public function listPlugins ()
