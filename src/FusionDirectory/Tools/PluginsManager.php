@@ -78,7 +78,7 @@ class PluginsManager extends Cli\Application
       $this->getVarOptions(),
       // Careful, an option ending by : will receive args passed by user.
       $this->options  = [
-        'register-plugin'  => [
+        'register-plugin:'  => [
           'help'        => 'Register plugin within LDAP',
           'command'     => 'addPluginRecord',
         ],
@@ -130,10 +130,13 @@ class PluginsManager extends Cli\Application
 
   // function that add plugin record
   // $params Path to the yaml file to be read.
-  public function addPluginRecord (string $path) : bool
+  public function addPluginRecord (array $path) : bool
   {
-    // Load the information from the yaml file
-    $pluginInfo = yaml_parse_file($path);
+    // Add verification method if control.yaml is present in root plugin folder
+    if (!file_exists($path[0]."/control.yaml")) {
+      throw new \Exception($path[0]."/control.yaml".' does not exist');
+    }
+    $pluginInfo = yaml_parse_file($path[0].'/control.yaml');
 
     // Instantiation of setup to return FD configurations.
     $setup = new Setup();
@@ -149,7 +152,7 @@ class PluginsManager extends Cli\Application
 
     // Verifying if the record of the plugin already exists and delete it.
     if ($this->branchExist($pluginDN)) {
-      echo 'Branch : ' .$pluginDN.' already exists, deleting...' .PHP_EOL;
+      echo 'Branch : ' .$pluginDN.' already exists, re-installing...' .PHP_EOL;
       $this->deletePluginRecord($pluginDN);
     }
 
@@ -278,15 +281,11 @@ class PluginsManager extends Cli\Application
 
     foreach ($plugins as $i => $pluginPath) {
 
-      // Add verification method if control.yaml is present in root plugin folder
-      if (!file_exists($pluginPath."/control.yaml")) {
-        throw new \Exception($pluginPath."/control.yaml".' does not exist');
-      }
       if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
         echo 'Installing plugin '.$pluginPath->getBasename().'.'."\n";
       }
       // Register the plugins within LDAP
-      $this->addPluginRecord($pluginPath."/control.yaml");
+      $this->addPluginRecord([$pluginPath]);
 
       // Move the folders and files to correct directories
       $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
