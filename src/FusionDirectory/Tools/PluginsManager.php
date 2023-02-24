@@ -138,11 +138,12 @@ class PluginsManager extends Cli\Application
   // $params Path to the yaml file to be read.
   public function addPluginRecord (array $path) : bool
   {
+    // This below could be iterated easily to add multiple plugins all at once.
     // Add verification method if description.yaml is present in root plugin folder
-    if (!file_exists($path[0]."/description.yaml")) {
-      throw new \Exception($path[0]."/description.yaml".' does not exist');
+    if (!file_exists($path[0]."/contrib/yaml/description.yaml")) {
+      throw new \Exception($path[0]."/contrib/yaml/description.yaml".' does not exist');
     }
-    $pluginInfo = yaml_parse_file($path[0].'/description.yaml');
+    $pluginInfo = yaml_parse_file($path[0].'/contrib/yaml/description.yaml');
 
     $this->connectLdap();
 
@@ -308,7 +309,7 @@ class PluginsManager extends Cli\Application
       $this->addPluginRecord([$pluginPath]);
 
       // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
-      $this->copyDirectory($pluginPath->getPathname().'/decription.yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginPath->getBasename().'/');
+      $this->copyDirectory($pluginPath->getPathname().'/contrib/yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginPath->getBasename().'/');
       $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
       $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
       $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
@@ -326,8 +327,8 @@ class PluginsManager extends Cli\Application
   {
     $this->connectLdap();
 
-    foreach($info as $pluginName) {
-      
+    foreach ($info as $pluginName) {
+
       // Subject to change as it has been decided not to record filelists within LDAP and to keep the yaml instead.
       try {
         $mesg = $this->ldap->search("ou=plugins,".$this->conf['default']['base'], "(&(objectClass=fdPlugin)(cn=".$pluginName."))", ['fdPluginContentFileList']);
@@ -340,7 +341,6 @@ class PluginsManager extends Cli\Application
       $this->deletePluginRecord($pluginName);
 
       $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'].'/yaml/'.$pluginName.'/description.yaml');
-      print_r($plufinInfo);
     }
   }
 
@@ -373,8 +373,6 @@ class PluginsManager extends Cli\Application
 
   public function copyDirectory (string $source, string $dest): void
   {
-    printf('Copy %s to %s'."\n", $source, $dest);
-
     if (file_exists($source)) {
       if (!file_exists($dest)) {
         if (mkdir($dest, 0755, TRUE) === FALSE) {
@@ -393,7 +391,9 @@ class PluginsManager extends Cli\Application
           }
         }
       }
-    }
-  }
 
+      printf('Copy %s to %s'."\n", $source, $dest);
+    }
+    // Here should be an else reporting source file not found, but previous code force copy of possible unexisting dir.
+  }
 }
