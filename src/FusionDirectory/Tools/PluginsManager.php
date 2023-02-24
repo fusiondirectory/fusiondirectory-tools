@@ -138,11 +138,11 @@ class PluginsManager extends Cli\Application
   // $params Path to the yaml file to be read.
   public function addPluginRecord (array $path) : bool
   {
-    // Add verification method if control.yaml is present in root plugin folder
-    if (!file_exists($path[0]."/control.yaml")) {
-      throw new \Exception($path[0]."/control.yaml".' does not exist');
+    // Add verification method if description.yaml is present in root plugin folder
+    if (!file_exists($path[0]."/description.yaml")) {
+      throw new \Exception($path[0]."/description.yaml".' does not exist');
     }
-    $pluginInfo = yaml_parse_file($path[0].'/control.yaml');
+    $pluginInfo = yaml_parse_file($path[0].'/description.yaml');
 
     $this->connectLdap();
 
@@ -307,8 +307,8 @@ class PluginsManager extends Cli\Application
       // Register the plugins within LDAP
       $this->addPluginRecord([$pluginPath]);
 
-      // Move the folders and files to correct directorie
       // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
+      $this->copyDirectory($pluginPath->getPathname().'/decription.yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginPath->getBasename().'/');
       $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
       $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
       $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
@@ -326,19 +326,21 @@ class PluginsManager extends Cli\Application
   {
     $this->connectLdap();
 
-    try {
-      $mesg = $this->ldap->search("ou=plugins,".$this->conf['default']['base'], "(&(objectClass=fdPlugin)(cn=".$info[0]."))", ['fdPluginContentFileList']);
-      $mesg->assert();
-    } catch (Ldap\Exception $e) {
-      printf('Error while search branch : %s for content file list!'."\n", $info[0]);
-      throw $e;
-    }
+    foreach($info as $pluginName) {
+      
+      // Subject to change as it has been decided not to record filelists within LDAP and to keep the yaml instead.
+      try {
+        $mesg = $this->ldap->search("ou=plugins,".$this->conf['default']['base'], "(&(objectClass=fdPlugin)(cn=".$pluginName."))", ['fdPluginContentFileList']);
+        $mesg->assert();
+      } catch (Ldap\Exception $e) {
+        printf('Error while search branch : %s for content file list!'."\n", $pluginName);
+        throw $e;
+      }
 
-    $this->deletePluginRecord($info);
+      $this->deletePluginRecord($pluginName);
 
-    // Recuperate the filelists
-    foreach ($mesg as $key => $value) {
-      print_r($value);
+      $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'].'/yaml/'.$pluginName.'/description.yaml');
+      print_r($plufinInfo);
     }
   }
 
