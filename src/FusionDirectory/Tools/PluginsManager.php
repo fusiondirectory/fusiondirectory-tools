@@ -146,7 +146,6 @@ class PluginsManager extends Cli\Application
     }
 
     $pluginInfo = yaml_parse_file($path[0].'/contrib/yaml/description.yaml');
-    print_r($pluginInfo);
     // verification if the origin are set to source
     if (!empty($pluginInfo['information']['origin']) && $pluginInfo['information']['origin'] !== 'source') {
       throw new \Exception('Error, the plugin does not comes from proper origin.');
