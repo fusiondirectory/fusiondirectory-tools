@@ -338,9 +338,48 @@ class PluginsManager extends Cli\Application
         throw $e;
       }
 
-      $this->deletePluginRecord($pluginName);
+      $this->deletePluginRecord([$pluginName]);
 
       $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'].'/yaml/'.$pluginName.'/description.yaml');
+      print_r($pluginInfo['content']['fileList']);
+
+      foreach ($pluginInfo['content']['fileList'] as $file) {
+        // Get the first dir from the path
+        $dirs = explode('/', $file);
+        // remove the './' unrequired provided from $file
+        array_shift($dirs);
+        // Get the finale path required to delete the file with the './' removed.
+        $final_path = implode('/', $dirs);
+
+        switch ($dirs[0]) {
+          case 'addons':
+            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+            break;
+          case 'config':
+            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+            break;
+          case 'personal':
+            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+            break;
+          case 'admin':
+            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+            break;
+        }
+      }
+    }
+  }
+
+  // Simply remove files provided in args
+  public function removeFile (string $file) : void
+  {
+    if (!file_exists($file)) {
+      throw new \Exception('Unable to delete : '.$file.' it does not exist.');
+    } else {
+      if (!unlink($file)) {
+        throw new \RuntimeException("Failed to unlink {$file}: " . var_export(error_get_last(), TRUE));
+      } else {
+        echo "unlink: {$file}" .PHP_EOL;
+      }
     }
   }
 
