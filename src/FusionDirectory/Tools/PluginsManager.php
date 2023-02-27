@@ -37,28 +37,28 @@ class PluginsManager extends Cli\Application
   private $pluginmanagementmapping = [
     "cn"                              => "information:name",
     "description"                     => "information:description",
-    "fdPluginInfoVersion"             => "information:version",
-    "fdPluginInfoAuthors"             => "information:authors",
-    "fdPluginInfoStatus"              => "information:status",
-    "fdPluginInfoScreenshotUrl"       => "information:screenshotUrl",
-    "fdPluginInfoLogoUrl"             => "information:logoUrl",
-    "fdPluginInfoTags"                => "information:tags",
-    "fdPluginInfoLicence"             => "information:license",
-    "fdPluginInfoOrigin"              => "information:origin",
-    "fdPluginSupportProvider"         => "support:provider",
-    "fdPluginSupportHomeUrl"          => "support:homeUrl",
-    "fdPluginSupportTicketUrl"        => "support:ticketUrl",
-    "fdPluginSupportDiscussionUrl"    => "support:discussionUrl",
-    "fdPluginSupportDownloadUrl"      => "support:downloadUrl",
-    "fdPluginSupportSchemaUrl"        => "support:schemaUrl",
-    "fdPluginSupportContractUrl"      => "support:contractUrl",
-    "fdPluginReqFdVersion"            => "requirement:fdVersion",
-    "fdPluginReqPhpVersion"           => "requirement:phpVersion",
-    "fdPluginReqPlugins"              => "requirement:plugins",
-    "fdPluginContentPhpClass"         => "content:phpClassList",
-    "fdPluginContentLdapObject"       => "content:ldapObjectList",
-    "fdPluginContentLdapAttributes"   => "content:ldapAttributeList",
-    "fdPluginContentFileList"         => "content:fileList",
+    "fdPluginManagerInfoVersion"             => "information:version",
+    "fdPluginManagerInfoAuthors"             => "information:authors",
+    "fdPluginManagerInfoStatus"              => "information:status",
+    "fdPluginManagerInfoScreenshotUrl"       => "information:screenshotUrl",
+    "fdPluginManagerInfoLogoUrl"             => "information:logoUrl",
+    "fdPluginManagerInfoTags"                => "information:tags",
+    "fdPluginManagerInfoLicence"             => "information:license",
+    "fdPluginManagerInfoOrigin"              => "information:origin",
+    "fdPluginManagerSupportProvider"         => "support:provider",
+    "fdPluginManagerSupportHomeUrl"          => "support:homeUrl",
+    "fdPluginManagerSupportTicketUrl"        => "support:ticketUrl",
+    "fdPluginManagerSupportDiscussionUrl"    => "support:discussionUrl",
+    "fdPluginManagerSupportDownloadUrl"      => "support:downloadUrl",
+    "fdPluginManagerSupportSchemaUrl"        => "support:schemaUrl",
+    "fdPluginManagerSupportContractUrl"      => "support:contractUrl",
+    "fdPluginManagerReqFdVersion"            => "requirement:fdVersion",
+    "fdPluginManagerReqPhpVersion"           => "requirement:phpVersion",
+    "fdPluginManagerReqPlugins"              => "requirement:plugins",
+    "fdPluginManagerContentPhpClass"         => "content:phpClassList",
+    "fdPluginManagerContentLdapObject"       => "content:ldapObjectList",
+    "fdPluginManagerContentLdapAttributes"   => "content:ldapAttributeList",
+    "fdPluginManagerContentFileList"         => "content:fileList",
   ];
 
   public function __construct ()
@@ -141,7 +141,12 @@ class PluginsManager extends Cli\Application
     if (!file_exists($path[0]."/contrib/yaml/description.yaml")) {
       throw new \Exception($path[0]."/contrib/yaml/description.yaml".' does not exist');
     }
+
     $pluginInfo = yaml_parse_file($path[0].'/contrib/yaml/description.yaml');
+    // verification if the origin are set to source
+    if (!empty($pluginInfo['information']['origin']) && $pluginInfo['information']['origin'] !== 'source') {
+      throw new \Exception('Error, the plugin does not comes from proper origin.');
+    }
 
     $this->connectLdap();
 
@@ -150,7 +155,7 @@ class PluginsManager extends Cli\Application
     }
 
     // Create the proper CN
-    $pluginDN = "cn=".$pluginInfo['information']['name'].",ou=plugins,".$this->conf['default']['base'];
+    $pluginDN = "cn=".$pluginInfo['information']['name'].",ou=pluginManager,".$this->conf['default']['base'];
 
     // Verifying if the record of the plugin already exists and delete it.
     if ($this->branchExist($pluginDN)) {
@@ -159,7 +164,7 @@ class PluginsManager extends Cli\Application
     }
 
     // Collect and arrange the info received by the yaml file.
-    $obj = ['objectClass' => ['top','fdPlugin']];
+    $obj = ['objectClass' => ['top','fdPluginManager']];
 
     foreach (array_keys($this->pluginmanagementmapping) as $k) {
       $section = preg_split('/:/', $this->pluginmanagementmapping[$k]);
@@ -196,21 +201,21 @@ class PluginsManager extends Cli\Application
   }
 
   /**
-   * Create ou=plugins LDAP branch
+   * Create ou=pluginManager LDAP branch
    */
   protected function createBranchPlugins (): void
   {
-    printf('Creating branch %s'."\n", 'ou=plugins');
+    printf('Creating branch %s'."\n", 'ou=pluginManager');
     try {
       $branchAdd = $this->ldap->add(
-        'ou=plugins,'.$this->conf['base'],
+        'ou=pluginManager,'.$this->conf['base'],
         [
           'ou'          => 'plugins',
           'objectClass' => 'organizationalUnit',
         ]
       );
     } catch (Ldap\Exception $e) {
-      printf('Error while creating branch : %s !'."\n", 'ou=plugins');
+      printf('Error while creating branch : %s !'."\n", 'ou=pluginManager');
       throw $e;
     }
   }
@@ -232,7 +237,7 @@ class PluginsManager extends Cli\Application
       }
       printf('Deleted %s successfully.'."\n", $dn);
     } else {
-      $pluginDN = "cn=".$dn.",ou=plugins,".$this->conf['default']['base'];
+      $pluginDN = "cn=".$dn.",ou=pluginManager,".$this->conf['default']['base'];
       try {
         $msg = $this->ldap->delete($pluginDN);
         $msg->assert();
@@ -329,7 +334,7 @@ class PluginsManager extends Cli\Application
 
       // Subject to change as it has been decided not to record filelists within LDAP and to keep the yaml instead.
       try {
-        $mesg = $this->ldap->search("ou=plugins,".$this->conf['default']['base'], "(&(objectClass=fdPlugin)(cn=".$pluginName."))", ['fdPluginContentFileList']);
+        $mesg = $this->ldap->search("ou=pluginManager,".$this->conf['default']['base'], "(&(objectClass=fdPluginManager)(cn=".$pluginName."))", ['fdPluginManagerContentFileList']);
         $mesg->assert();
       } catch (Ldap\Exception $e) {
         printf('Error while search branch : %s for content file list!'."\n", $pluginName);
@@ -406,9 +411,9 @@ class PluginsManager extends Cli\Application
   public function listPlugins ()
   {
     $this->connectLdap();
-    $pluginattrs = ['cn','description','fdPluginInfoAuthors','fdPluginInfoVersion','fdPluginSupportHomeUrl','fdPluginInfoStatus','fdPluginSupportProvider','fdPluginInfoOrigin'];
+    $pluginattrs = ['cn','description','fdPluginManagerInfoAuthors','fdPluginManagerInfoVersion','fdPluginManagerSupportHomeUrl','fdPluginManagerInfoStatus','fdPluginManagerSupportProvider','fdPluginManagerInfoOrigin'];
 
-    $mesg = $this->ldap->search("ou=plugins,".$this->conf['default']['base'], "(objectClass=fdPlugin)", $pluginattrs);
+    $mesg = $this->ldap->search("ou=pluginManager,".$this->conf['default']['base'], "(objectClass=fdPluginManager)", $pluginattrs);
     $mesg->assert();
 
     // Recuperate only the full DN of the plugin and extract the exact plugin's name.
