@@ -69,8 +69,6 @@ class PluginsManager extends Cli\Application
     $this->vars = [
       'fd_home'         => '/usr/share/fusiondirectory',
       'fd_config_dir'     => '/etc/fusiondirectory',
-      'plugin_archive'    => '/path/to/archive',
-      'plugin_name'     => 'plugin_name'
     ];
 
     // Options available during script calling.
@@ -147,7 +145,7 @@ class PluginsManager extends Cli\Application
 
     $this->connectLdap();
 
-    if (!$this->branchExist('ou=plugins,'.$this->conf['default']['base'])) {
+    if (!$this->branchExist('ou=pluginManager,'.$this->conf['default']['base'])) {
       $this->createBranchPlugins();
     }
 
@@ -364,8 +362,30 @@ class PluginsManager extends Cli\Application
           case 'admin':
             $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
             break;
+          case 'html':
+            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+            break;
+          case 'ihtml':
+            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+            break;
+          case 'include':
+            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+            break;
+          case 'contrib':
+            if ($dirs[1] == 'openldap') {
+              $this->removeFile($this->vars['fd_home'].'/'.$final_path);
+            }
+            if ($dirs[1] == 'etc') {
+              $this->removeFile($this->vars['fd_config_dir'].'/'.basename(dirname($final_path)).'/'.basename($final_path));
+            }
+            break;
+          case 'local':
+            $this->removeFile($this->vars['fd_home'].'/locale/plugins/'.$pluginName.'/locale/'.basename(dirname($final_path)).'/'.basename($final_path));
+            break;
         }
       }
+      // Finally delete the yaml file of the plugin.
+      $this->removeFile($this->vars['fd_config_dir'].'/yaml/'.$pluginName.'/description.yaml');
     }
   }
 
@@ -399,7 +419,7 @@ class PluginsManager extends Cli\Application
     }
 
     if (isset($count) && count($count) !== 0) {
-        echo "Number of plugins installed : ".count($count). PHP_EOL;
+      echo "Number of plugins installed : ".count($count). PHP_EOL;
       if (isset($plugins)) {
         foreach ($plugins as $plugin) {
           echo "Plugin : ".$plugin. " is installed" .PHP_EOL;
