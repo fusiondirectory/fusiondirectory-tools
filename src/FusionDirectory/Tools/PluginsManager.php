@@ -135,20 +135,38 @@ class PluginsManager extends Cli\Application
     }
   }
 
-  // function that add plugin record
+  // Open the yaml file properly if given directly or from source.
+  public function parseYamlFile (array $path) : array
+  {
+    $result = NULL;
+    // verify if the yaml file is provided directly - case for packaged plugins.
+    if (is_file($path[0])) {
+      $result = preg_match('/description.yaml/', $path[0]);
+      // verify if the archive (non packaged) contains the proper yaml.
+    } elseif (!file_exists($path[0]."/contrib/yaml/description.yaml")) {
+      throw new \Exception($path[0]."/contrib/yaml/description.yaml does not exist");
+    }
+    // Load the proper yaml if provide directly (packaged) of from source.
+    if ($result === 1) {
+      $pluginInfo = yaml_parse_file($path[0]);
+    } else {
+      $pluginInfo = yaml_parse_file($path[0].'/contrib/yaml/description.yaml');
+    }
+
+    return $pluginInfo;
+  }
+
+  // function that add plugin record.
   // $params Path to the yaml file to be read.
   public function addPluginRecord (array $path) : bool
   {
-    // This below could be iterated easily to add multiple plugins all at once.
-    // Add verification method if description.yaml is present in root plugin folder
-    if (!file_exists($path[0]."/contrib/yaml/description.yaml")) {
-      throw new \Exception($path[0]."/contrib/yaml/description.yaml".' does not exist');
-    }
+    $pluginInfo = $this->parseYamlFile($path);
 
-    $pluginInfo = yaml_parse_file($path[0].'/contrib/yaml/description.yaml');
-    // verification if the origin are set to source
-    if (!empty($pluginInfo['information']['origin']) && $pluginInfo['information']['origin'] !== 'source') {
-      throw new \Exception('Error, the plugin does not comes from proper origin.');
+    // verification if the origin are set properly.
+    if (!empty($pluginInfo['information']['origin'])) {
+      if ($pluginInfo['information']['origin'] !== 'source' && $pluginInfo['information']['origin'] !== 'package') {
+        throw new \Exception('Error, the plugin does not comes from proper origin.');
+      }
     }
 
     // Load Setup and Ldap objects and create branch pluginManager if required.
@@ -311,18 +329,23 @@ class PluginsManager extends Cli\Application
       // Register the plugins within LDAP
       $this->addPluginRecord([$pluginPath]);
 
-      // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
-      $this->copyDirectory($pluginPath->getPathname().'/contrib/yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginPath->getBasename().'/');
-      $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
-      $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
-      $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
-      $this->copyDirectory($pluginPath->getPathname().'/personal', $this->vars['fd_home'].'/plugins/personal');
-      $this->copyDirectory($pluginPath->getPathname().'/html', $this->vars['fd_home'].'/html');
-      $this->copyDirectory($pluginPath->getPathname().'/ihtml', $this->vars['fd_home'].'/ihtml');
-      $this->copyDirectory($pluginPath->getPathname().'/include', $this->vars['fd_home'].'/include');
-      $this->copyDirectory($pluginPath->getPathname().'/contrib/openldap', $this->vars['fd_home'].'/contrib/openldap');
-      $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginPath->getBasename());
-      $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginPath->getBasename().'/locale');
+      $pluginInfo = $this->parseYamlFile([$pluginPath]);
+
+      // If package do not install
+      if ($pluginInfo['information']['origin'] !== 'package') {
+        // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
+        $this->copyDirectory($pluginPath->getPathname().'/contrib/yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginPath->getBasename().'/');
+        $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
+        $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
+        $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
+        $this->copyDirectory($pluginPath->getPathname().'/personal', $this->vars['fd_home'].'/plugins/personal');
+        $this->copyDirectory($pluginPath->getPathname().'/html', $this->vars['fd_home'].'/html');
+        $this->copyDirectory($pluginPath->getPathname().'/ihtml', $this->vars['fd_home'].'/ihtml');
+        $this->copyDirectory($pluginPath->getPathname().'/include', $this->vars['fd_home'].'/include');
+        $this->copyDirectory($pluginPath->getPathname().'/contrib/openldap', $this->vars['fd_home'].'/contrib/openldap');
+        $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginPath->getBasename());
+        $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginPath->getBasename().'/locale');
+      }
     }
   }
 
@@ -334,52 +357,54 @@ class PluginsManager extends Cli\Application
 
       $this->deletePluginRecord([$pluginName]);
       $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'].'/yaml/'.$pluginName.'/description.yaml');
+      // if origin = package, do not remove files.
+      if ($pluginInfo['information']['origin'] !== 'package') {
+        foreach ($pluginInfo['content']['fileList'] as $file) {
+          // Get the first dir from the path
+          $dirs = explode('/', $file);
+          // remove the './' unrequired provided from $file
+          array_shift($dirs);
+          // Get the finale path required to delete the file with the './' removed.
+          $final_path = implode('/', $dirs);
 
-      foreach ($pluginInfo['content']['fileList'] as $file) {
-        // Get the first dir from the path
-        $dirs = explode('/', $file);
-        // remove the './' unrequired provided from $file
-        array_shift($dirs);
-        // Get the finale path required to delete the file with the './' removed.
-        $final_path = implode('/', $dirs);
-
-        switch ($dirs[0]) {
-          case 'addons':
-            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
-            break;
-          case 'config':
-            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
-            break;
-          case 'personal':
-            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
-            break;
-          case 'admin':
-            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
-            break;
-          case 'html':
-            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
-            break;
-          case 'ihtml':
-            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
-            break;
-          case 'include':
-            $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
-            break;
-          case 'contrib':
-            if ($dirs[1] == 'openldap') {
-              $this->removeFile($this->vars['fd_home'].'/'.$final_path);
-            }
-            if ($dirs[1] == 'etc') {
-              $this->removeFile($this->vars['fd_config_dir'].'/'.basename(dirname($final_path)).'/'.basename($final_path));
-            }
-            break;
-          case 'local':
-            $this->removeFile($this->vars['fd_home'].'/locale/plugins/'.$pluginName.'/locale/'.basename(dirname($final_path)).'/'.basename($final_path));
-            break;
+          switch ($dirs[0]) {
+            case 'addons':
+              $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+              break;
+            case 'config':
+              $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+              break;
+            case 'personal':
+              $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+              break;
+            case 'admin':
+              $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+              break;
+            case 'html':
+              $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+              break;
+            case 'ihtml':
+              $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+              break;
+            case 'include':
+              $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+              break;
+            case 'contrib':
+              if ($dirs[1] == 'openldap') {
+                $this->removeFile($this->vars['fd_home'].'/'.$final_path);
+              }
+              if ($dirs[1] == 'etc') {
+                $this->removeFile($this->vars['fd_config_dir'].'/'.basename(dirname($final_path)).'/'.basename($final_path));
+              }
+              break;
+            case 'local':
+              $this->removeFile($this->vars['fd_home'].'/locale/plugins/'.$pluginName.'/locale/'.basename(dirname($final_path)).'/'.basename($final_path));
+              break;
+          }
         }
+        // Finally delete the yaml file of the plugin.
+        $this->removeFile($this->vars['fd_config_dir'].'/yaml/'.$pluginName.'/description.yaml');
       }
-      // Finally delete the yaml file of the plugin.
-      $this->removeFile($this->vars['fd_config_dir'].'/yaml/'.$pluginName.'/description.yaml');
     }
   }
 
