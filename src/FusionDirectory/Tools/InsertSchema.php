@@ -17,7 +17,7 @@
   You should have received a copy of the GNU General Public License
   along with this program; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
-*/
+ */
 
 namespace FusionDirectory\Tools;
 
@@ -348,17 +348,20 @@ class InsertSchema extends Cli\Application
    */
   protected function gatherSchemaInformation (string $path): array
   {
-    if (preg_match('|^/|', $path) !== 1) {
+    if (!is_file($path)) {
       $path = $this->defaultSchemaDir.'/'.$path;
     }
-    if (preg_match('/\.(schema|ldif)$/i', $path) !== 1) {
-      $path .= '.schema';
-    }
-    if (preg_match('@^/.+/([^/]+).(schema|ldif)$@', $path, $m) === 1) {
-      $name = $m[1];
+
+    // Recuperate the filename and verify if the file contains the proper extension.
+    $name = basename($path);
+    preg_match('/(.*)\.(ldif|schema)/', $name, $match);
+
+    if (isset($match[1]) && !empty($match[1])) {
+      $name = $match[1];
     } else {
-      throw new \Exception('Preg match failed on path '.$path);
+      throw new \Exception('File extension error, must be .ldif or .schema');
     }
+
     $list   = $this->searchForSchemas($name);
     $count  = $list->count();
     if ($count < 0) {
@@ -458,11 +461,11 @@ class InsertSchema extends Cli\Application
         $list = $this->ldap->search(
           'cn=schema,cn=config',
           '(&'.
-            '(objectClass=olcSchemaConfig)'.
-            '(|'.
-              '(olcAttributeTypes=*'.ldap_escape('NAME \''.$attribute.'\'', '', LDAP_ESCAPE_FILTER).'*)'.
-              '(olcAttributeTypes=*'.ldap_escape('NAME ( \''.$attribute.'\'', '', LDAP_ESCAPE_FILTER).'*)'.
-            ')'.
+          '(objectClass=olcSchemaConfig)'.
+          '(|'.
+          '(olcAttributeTypes=*'.ldap_escape('NAME \''.$attribute.'\'', '', LDAP_ESCAPE_FILTER).'*)'.
+          '(olcAttributeTypes=*'.ldap_escape('NAME ( \''.$attribute.'\'', '', LDAP_ESCAPE_FILTER).'*)'.
+          ')'.
           ')',
           ['cn','olcAttributeTypes','olcObjectClasses','createTimestamp','modifyTimestamp'],
           'subtree'
