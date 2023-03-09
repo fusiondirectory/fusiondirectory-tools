@@ -325,26 +325,27 @@ class PluginsManager extends Cli\Application
 
       if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
         echo 'Installing plugin '.$pluginPath->getBasename().'.'."\n";
-      }
-      // Register the plugins within LDAP
-      $this->addPluginRecord([$pluginPath]);
 
-      $pluginInfo = $this->parseYamlFile([$pluginPath]);
+        // Register the plugins within LDAP
+        $this->addPluginRecord([$pluginPath]);
+        $pluginInfo = $this->parseYamlFile([$pluginPath]);
 
-      // If package do not install
-      if ($pluginInfo['information']['origin'] !== 'package') {
-        // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
-        $this->copyDirectory($pluginPath->getPathname().'/contrib/yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginPath->getBasename().'/');
-        $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
-        $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
-        $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
-        $this->copyDirectory($pluginPath->getPathname().'/personal', $this->vars['fd_home'].'/plugins/personal');
-        $this->copyDirectory($pluginPath->getPathname().'/html', $this->vars['fd_home'].'/html');
-        $this->copyDirectory($pluginPath->getPathname().'/ihtml', $this->vars['fd_home'].'/ihtml');
-        $this->copyDirectory($pluginPath->getPathname().'/include', $this->vars['fd_home'].'/include');
-        $this->copyDirectory($pluginPath->getPathname().'/contrib/openldap', $this->vars['fd_home'].'/contrib/openldap');
-        $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginPath->getBasename());
-        $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginPath->getBasename().'/locale');
+        // If package do not install
+        if ($pluginInfo['information']['origin'] !== 'package') {
+          // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
+          $this->copyDirectory($pluginPath->getPathname().'/contrib/yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginPath->getBasename().'/');
+          $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
+          $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
+          $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
+          $this->copyDirectory($pluginPath->getPathname().'/personal', $this->vars['fd_home'].'/plugins/personal');
+          $this->copyDirectory($pluginPath->getPathname().'/html', $this->vars['fd_home'].'/html');
+          $this->copyDirectory($pluginPath->getPathname().'/ihtml', $this->vars['fd_home'].'/ihtml');
+          $this->copyDirectory($pluginPath->getPathname().'/include', $this->vars['fd_home'].'/include');
+          $this->copyDirectory($pluginPath->getPathname().'/contrib/openldap', $this->vars['fd_home'].'/contrib/openldap');
+          $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginPath->getBasename());
+          $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginPath->getBasename().'/locale');
+        }
+        echo 'Please refresh FusionDirectory with fusiondirectory-configuration-manager --update-cache' .PHP_EOL;
       }
     }
   }
