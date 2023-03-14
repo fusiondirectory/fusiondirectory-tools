@@ -106,10 +106,6 @@ class Setup extends Cli\LdapApplication
           'help'    => 'Show passwords from fusiondirectory.conf',
           'command' => 'cmdShowPasswords',
         ],
-        'install-plugins:'  => [
-          'help'    => 'Install all FusionDirectory plugins from an archive or directory',
-          'command' => 'cmdInstallPlugins',
-        ],
         'update-locales'  => [
           'help'    => 'Update translation files',
           'command' => 'cmdUpdateLocales',
