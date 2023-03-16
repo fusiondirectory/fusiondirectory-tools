@@ -297,9 +297,8 @@ class PluginsManager extends Cli\Application
           throw $e;
         }
         exit;
-
       }
-      printf('Deleted %s from LDAP successfully.'."\n", $dn);
+      printf('%s plugin has been successfully unregistered.'."\n", $dn);
     }
   }
 
