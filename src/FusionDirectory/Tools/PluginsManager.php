@@ -266,6 +266,12 @@ class PluginsManager extends Cli\Application
     $this->requirements();
     $dn = $dn[0];
 
+    // Verification if the DN passed is not a dir or a file.
+    if (file_exists($dn)) {
+      echo "Error! You must pass the name of the plugin as argument. Not a file or directory." .PHP_EOL;
+      exit;
+    }
+
     preg_match('/cn=.*,ou.*,dc=/', $dn, $match);
     if (isset($match[0]) && !empty($match[0])) {
       try {
