@@ -96,6 +96,9 @@ class PluginsManager extends Cli\Application
           'help'        => 'List installed FusionDirectory plugins',
           'command'     => 'listPlugins',
         ],
+        'debug'          => [
+          'debug'        => 'Allows detailed debug output',
+        ],
         'help'          => [
           'help'        => 'Show this help',
         ],
@@ -144,7 +147,12 @@ class PluginsManager extends Cli\Application
       $result = preg_match('/description.yaml/', $path[0]);
       // verify if the archive (non packaged) contains the proper yaml.
     } elseif (!file_exists($path[0]."/contrib/yaml/description.yaml")) {
-      throw new \Exception($path[0]."/contrib/yaml/description.yaml does not exist");
+      if ($this->getopt['debug']) {
+        throw new \Exception($path[0]."/contrib/yaml/description.yaml does not exist");
+      } else {
+        echo "The description.yaml file could not be found" .PHP_EOL;
+        exit;
+      }
     }
     // Load the proper yaml if provide directly (packaged) of from source.
     if ($result === 1) {
@@ -165,7 +173,12 @@ class PluginsManager extends Cli\Application
     // verification if the origin are set properly.
     if (!empty($pluginInfo['information']['origin'])) {
       if ($pluginInfo['information']['origin'] !== 'source' && $pluginInfo['information']['origin'] !== 'package') {
-        throw new \Exception('Error, the plugin does not comes from proper origin.');
+        if ($this->getopt['debug']) {
+          throw new \Exception('Error, the plugin does not comes from proper origin.');
+        } else {
+          echo "Error, the plugin does not comes from proper origin.".PHP_EOL;
+          exit;
+        }
       }
     }
 
@@ -197,7 +210,11 @@ class PluginsManager extends Cli\Application
       $msg->assert();
     } catch (Ldap\Exception $e) {
       echo "Error while creating LDAP entries" .PHP_EOL;
-      throw $e;
+      if ($this->getopt['debug']) {
+        throw $e;
+      }
+      exit;
+
     }
     echo 'Installing : '.$pluginDN.' ...' .PHP_EOL;
 
@@ -234,7 +251,12 @@ class PluginsManager extends Cli\Application
       );
     } catch (Ldap\Exception $e) {
       printf('Error while creating branch : %s !'."\n", 'ou=pluginManager');
-      throw $e;
+      if ($this->getopt['debug']) {
+        throw $e;
+      }
+      exit;
+
+
     }
   }
 
@@ -251,7 +273,11 @@ class PluginsManager extends Cli\Application
         $msg->assert();
       } catch (Ldap\Exception $e) {
         printf('Error while deleting branch : %s !'."\n", $dn);
-        throw $e;
+        if ($this->getopt['debug']) {
+          throw $e;
+        }
+        exit;
+
       }
       printf('Deleted %s from LDAP successfully.'."\n", $dn);
     } else {
@@ -261,7 +287,11 @@ class PluginsManager extends Cli\Application
         $msg->assert();
       } catch (Ldap\Exception $e) {
         printf('Error while deleting branch : %s !'."\n", $dn);
-        throw $e;
+        if ($this->getopt['debug']) {
+          throw $e;
+        }
+        exit;
+
       }
       printf('Deleted %s from LDAP successfully.'."\n", $dn);
     }
@@ -270,12 +300,22 @@ class PluginsManager extends Cli\Application
   public function installPlugin (array $paths)
   {
     if (count($paths) != 1) {
-      throw new \Exception('Please provide one and only one path to fetch plugins from');
+      if ($this->getopt['debug']) {
+        throw new \Exception('Please provide one and only one path to fetch plugins from');
+      } else {
+        echo "Please provide one and only one path to fetch plugins from'" .PHP_EOL;
+        exit;
+      }
     }
 
     $path = $paths[0];
     if (!file_exists($path)) {
-      throw new \Exception($path.' does not exist');
+      if ($this->getopt['debug']) {
+        throw new \Exception($path.' does not exist');
+      } else {
+        echo $path." does not exist".PHP_EOL;
+        exit;
+      }
     }
 
     if (is_dir($path)) {
@@ -286,7 +326,13 @@ class PluginsManager extends Cli\Application
       if (preg_match('/^.*\/(.+).tar.gz$/', $path, $m)) {
         $name = $m[1];
       } else {
-        throw new \Exception('Unkwnow archive '.$path);
+        if ($this->getopt['debug']) {
+          throw new \Exception('Unknown archive '.$path);
+        } else {
+          echo "Unknown archive" .PHP_EOL;
+          exit;
+        }
+
       }
 
       /* Where the extract files will go */
@@ -318,7 +364,8 @@ class PluginsManager extends Cli\Application
     $userInput = $this->askUserInput('Which plugins do you want to install (use "all" to install all plugins)?');
     $pluginsToInstall = preg_split('/\s+/', $userInput);
     if ($pluginsToInstall === FALSE) {
-      throw new \Exception('Failed to parse "'.$userInput.'"');
+      echo "Failed to parse ".$userInput.PHP_EOL;
+      exit;
     }
 
     foreach ($plugins as $i => $pluginPath) {
@@ -413,12 +460,18 @@ class PluginsManager extends Cli\Application
   public function removeFile (string $file) : void
   {
     if (!file_exists($file)) {
-      throw new \Exception('Unable to delete : '.$file.' it does not exist.');
+      if ($this->getopt['debug']) {
+        throw new \Exception('Unable to delete : '.$file.' it does not exist.');
+      } else {
+        echo "Unable to delete : ".$file." it does not exist" .PHP_EOL;
+        exit;
+      }
     } else {
       if (!unlink($file)) {
         throw new \RuntimeException("Failed to unlink {$file}: " . var_export(error_get_last(), TRUE));
       } else {
         echo "unlink: {$file}" .PHP_EOL;
+        exit;
       }
     }
   }
@@ -456,7 +509,12 @@ class PluginsManager extends Cli\Application
     if (file_exists($source)) {
       if (!file_exists($dest)) {
         if (mkdir($dest, 0755, TRUE) === FALSE) {
-          throw new \Exception('Unable to create "'.$dest.'"');
+          if ($this->getopt['debug']) {
+            throw new \Exception('Unable to create "'.$dest.'"');
+          } else {
+            echo "Unable to create ".$dest .PHP_EOL;
+            exit;
+          }
         }
       }
 
@@ -467,7 +525,13 @@ class PluginsManager extends Cli\Application
           $this->copyDirectory($file->getPathname(), $dest.'/'.$file->getBasename());
         } else {
           if (copy($file->getPathname(), $dest.'/'.$file->getBasename()) === FALSE) {
-            throw new \Exception('Unable to copy '.$file->getPathname().' to '.$dest.'/'.$file->getBasename());
+            if ($this->getopt['debug']) {
+
+              throw new \Exception('Unable to copy '.$file->getPathname().' to '.$dest.'/'.$file->getBasename());
+            } else {
+              echo 'Unable to copy '.$file->getPathname().'to '.$dest.'/'.$file->getBasename().PHP_EOL;
+              exit;
+            }
           }
         }
       }
