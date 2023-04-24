@@ -8,10 +8,6 @@ FusionDirectory Tools is a set of applications used to manage various aspect Fus
 * Allows interaction with FusionDirectory system configuration.
 * Allows registration of internal and external plugins.
 
-## Installation and upgrade of FusionDirectory Tools
-
-Installation is automatic during the installation of FusionDirectory Core.
-
 ## Get help
 
 ### Community support
