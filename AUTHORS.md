@@ -7,7 +7,7 @@ documentation and additional help.
 
 * Antoine Gallavardin <antoine.gallavardin@free.fr>
   Creation and development of PluginManager in Perl
-* Bernigaud Côme <come.bernigaud@laposte.net>
+* Chilliet Côme <come.chilliet@fusiondirectory.org>
   Creation and development of the FusionDirectory Tools.
 * Dockx Thibault <thibault.dockx@fusiondirectory.org>
   Rewrote fusiondirectory-pluginmanager in PHP.
