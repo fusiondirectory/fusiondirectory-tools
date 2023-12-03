@@ -95,6 +95,9 @@ class PluginsManager extends Cli\Application
           'help'    => 'List installed FusionDirectory plugins',
           'command' => 'listPlugins',
         ],
+        'symlink'            => [
+          'symlink' => 'symlink plugin files instead of copying. useful for plugin development.',
+        ],
         'debug'              => [
           'debug' => 'Allows detailed debug output',
         ],
@@ -418,17 +421,29 @@ class PluginsManager extends Cli\Application
       }
     }
 
-    // Copy files if destination plugin folder only contains one plugin.
-    if (!empty($lonePlugin) && $lonePlugin === TRUE) {
-      $this->copyPluginFiles($path);
-      // Manage multiple plugins installation.
-    } else {
-      foreach ($plugins as $i => $pluginPath) {
-        if (!empty($pluginsToInstall)) {
-          if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
-            echo 'Installing plugin contained within directory :' . $pluginPath->getBasename() . '.' . "\n";
-            $this->copyPluginFiles($pluginPath);
-          }
+    foreach ($plugins as $i => $pluginPath) {
+
+      if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
+        echo 'Installing plugin '.$pluginPath->getBasename().'.'."\n";
+
+        // Register the plugins within LDAP
+        $this->addPluginRecord([$pluginPath]);
+        $pluginInfo = $this->parseYamlFile([$pluginPath]);
+
+        // If package do not install
+        if ($pluginInfo['information']['origin'] !== 'package' || $this->getopt['symlink']) {
+          // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
+          $this->copyDirectory($pluginPath->getPathname().'/contrib/yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginPath->getBasename().'/');
+          $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
+          $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
+          $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
+          $this->copyDirectory($pluginPath->getPathname().'/personal', $this->vars['fd_home'].'/plugins/personal');
+          $this->copyDirectory($pluginPath->getPathname().'/html', $this->vars['fd_home'].'/html');
+          $this->copyDirectory($pluginPath->getPathname().'/ihtml', $this->vars['fd_home'].'/ihtml');
+          $this->copyDirectory($pluginPath->getPathname().'/include', $this->vars['fd_home'].'/include');
+          $this->copyDirectory($pluginPath->getPathname().'/contrib/openldap', $this->vars['fd_home'].'/contrib/openldap');
+          $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginPath->getBasename());
+          $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginPath->getBasename().'/locale');
         }
       }
     }
@@ -468,7 +483,7 @@ class PluginsManager extends Cli\Application
       $this->deletePluginRecord([$pluginName]);
       $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
       // if origin = package, do not remove files.
-      if ($pluginInfo['information']['origin'] !== 'package') {
+      if ($pluginInfo['information']['origin'] !== 'package' || $this->getopt['symlink']) {
         foreach ($pluginInfo['content']['fileList'] as $file) {
           // Get the first dir from the path
           $dirs = explode('/', $file);
@@ -580,24 +595,34 @@ class PluginsManager extends Cli\Application
       }
 
       $Directory = new \FilesystemIterator($source);
+      $result = false;
+      $mode = "";
 
       foreach ($Directory as $file) {
         if ($file->isDir()) {
           $this->copyDirectory($file->getPathname(), $dest . '/' . $file->getBasename());
         } else {
-          if (copy($file->getPathname(), $dest . '/' . $file->getBasename()) === FALSE) {
+          if ($this->getopt['symlink']) {
+              $result = symlink($file->getPathname(), $dest.'/'.$file->getBasename());
+              $mode = 'symlink ';
+          } else {
+              $result = copy($file->getPathname(), $dest.'/'.$file->getBasename());
+              $mode = 'copy ';
+          }
+
+          if ($result === FALSE) {
             if ($this->getopt['debug']) {
 
-              throw new \Exception('Unable to copy ' . $file->getPathname() . ' to ' . $dest . '/' . $file->getBasename());
+              throw new \Exception('Unable to '.$mode.$file->getPathname().' to '.$dest.'/'.$file->getBasename());
             } else {
-              echo 'Unable to copy ' . $file->getPathname() . 'to ' . $dest . '/' . $file->getBasename() . PHP_EOL;
+              echo 'Unable to '.$mode.$file->getPathname().'to '.$dest.'/'.$file->getBasename().PHP_EOL;
               exit;
             }
           }
         }
       }
 
-      printf('Copy %s to %s' . "\n", $source, $dest);
+      printf($mode.'%s to %s'."\n", $source, $dest);
     }
     // Here should be an else reporting source file not found, but previous code force copy of possible unexisting dir.
   }
