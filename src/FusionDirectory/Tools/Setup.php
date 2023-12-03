@@ -602,7 +602,7 @@ class Setup extends Cli\LdapApplication
   protected function getClassesList (string $path): array
   {
     /* Recursive iterator on the directory */
-    $Directory = new \RecursiveDirectoryIterator($path, \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_PATHNAME);
+    $Directory = new \RecursiveDirectoryIterator($path, \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_PATHNAME | \FilesystemIterator::FOLLOW_SYMLINKS);
     /* Flatten the iterator to iterate directly on all files in the tree */
     $Iterator = new \RecursiveIteratorIterator($Directory);
     /* Filter by regex */
