@@ -1,6 +1,6 @@
 <?php
 /*
-  This code is part of ldap-config-manager (https://www.fusiondirectory.org/)
+  This code is part of fusiondirectory-tools (https://www.fusiondirectory.org/)
 
   Copyright (C) 2023  FusionDirectory
 
@@ -385,7 +385,7 @@ class PluginsManager extends Cli\Application
         // If package do not install
         if ($pluginInfo['information']['origin'] !== 'package') {
           // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
-          $this->copyDirectory($pluginPath->getPathname().'/contrib/yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginPath->getBasename().'/');
+          $this->copyDirectory($pluginPath->getPathname().'/contrib/yaml', $this->vars['fd_config_dir'].'/yaml/'.$pluginInfo['information']['name'].'/');
           $this->copyDirectory($pluginPath->getPathname().'/addons', $this->vars['fd_home'].'/plugins/addons');
           $this->copyDirectory($pluginPath->getPathname().'/admin', $this->vars['fd_home'].'/plugins/admin');
           $this->copyDirectory($pluginPath->getPathname().'/config', $this->vars['fd_home'].'/plugins/config');
@@ -394,8 +394,8 @@ class PluginsManager extends Cli\Application
           $this->copyDirectory($pluginPath->getPathname().'/ihtml', $this->vars['fd_home'].'/ihtml');
           $this->copyDirectory($pluginPath->getPathname().'/include', $this->vars['fd_home'].'/include');
           $this->copyDirectory($pluginPath->getPathname().'/contrib/openldap', $this->vars['fd_home'].'/contrib/openldap');
-          $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginPath->getBasename());
-          $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginPath->getBasename().'/locale');
+          $this->copyDirectory($pluginPath->getPathname().'/contrib/etc', $this->vars['fd_config_dir'].'/'.$pluginInfo['information']['name']);
+          $this->copyDirectory($pluginPath->getPathname().'/locale', $this->vars['fd_home'].'/locale/plugins/'.$pluginInfo['information']['name'].'/locale');
         }
         echo 'Please refresh FusionDirectory with fusiondirectory-configuration-manager --update-cache' .PHP_EOL;
       }
@@ -434,10 +434,10 @@ class PluginsManager extends Cli\Application
               $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
               break;
             case 'html':
-              $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+              $this->removeFile($this->vars['fd_home'].'/'.$final_path);
               break;
             case 'ihtml':
-              $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
+              $this->removeFile($this->vars['fd_home'].'/'.$final_path);
               break;
             case 'include':
               $this->removeFile($this->vars['fd_home'].'/plugins/'.$final_path);
@@ -476,7 +476,6 @@ class PluginsManager extends Cli\Application
         throw new \RuntimeException("Failed to unlink {$file}: " . var_export(error_get_last(), TRUE));
       } else {
         echo "unlink: {$file}" .PHP_EOL;
-        exit;
       }
     }
   }
