@@ -21,8 +21,7 @@
 
 namespace FusionDirectory\Tools;
 
-use \FusionDirectory\Cli;
-use \FusionDirectory\Ldap;
+use FusionDirectory\{Cli, Ldap};
 
 class PluginsManager extends Cli\Application
 {
@@ -110,7 +109,6 @@ class PluginsManager extends Cli\Application
 
   /**
    * @param array<string> $argv
-   * @throws \FusionDirectory\Ldap\Exception
    * Make the ldap bind a connect securely.
    */
   public function run (array $argv): void
@@ -198,7 +196,7 @@ class PluginsManager extends Cli\Application
     $obj = ['objectClass' => ['top', 'fdPluginManager']];
 
     foreach (array_keys($this->pluginmanagementmapping) as $k) {
-      $section = preg_split('/:/', $this->pluginmanagementmapping[$k]);
+      $section = explode(':', $this->pluginmanagementmapping[$k]);
       if (isset($pluginInfo[$section[0]][$section[1]])) {
         $obj[$k] = $pluginInfo[$section[0]][$section[1]];
       }
@@ -392,7 +390,7 @@ class PluginsManager extends Cli\Application
     } else {
       foreach ($plugins as $i => $pluginPath) {
 
-        if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
+        if (!empty($pluginsToInstall) && in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
           echo 'Installing plugin contained within directory :' . $pluginPath->getBasename() . '.' . "\n";
           $this->copyPluginFiles($pluginPath);
         }
