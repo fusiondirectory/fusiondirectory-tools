@@ -270,6 +270,13 @@ class PluginsManager extends Cli\Application
       exit;
     }
 
+    // Verification if the plugin exists in LDAP
+    $pluginDN = "cn=" . $dn . ",ou=pluginManager," . $this->conf['default']['base'];
+    if (!$this->branchExist($pluginDN)) {
+      echo 'The plugin is name is either wrong or the plugin specified is not installed.' . PHP_EOL;
+      exit;
+    }
+
     preg_match('/cn=.*,ou.*,dc=/', $dn, $match);
     if (isset($match[0]) && !empty($match[0])) {
       try {
@@ -285,7 +292,6 @@ class PluginsManager extends Cli\Application
       }
       printf('Deleted %s from LDAP successfully.' . "\n", $dn);
     } else {
-      $pluginDN = "cn=" . $dn . ",ou=pluginManager," . $this->conf['default']['base'];
       try {
         $msg = $this->ldap->delete($pluginDN);
         $msg->assert();
