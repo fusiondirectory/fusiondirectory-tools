@@ -389,10 +389,11 @@ class PluginsManager extends Cli\Application
       $this->copyPluginFiles($path);
     } else {
       foreach ($plugins as $i => $pluginPath) {
-
-        if (!empty($pluginsToInstall) && in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
-          echo 'Installing plugin contained within directory :' . $pluginPath->getBasename() . '.' . "\n";
-          $this->copyPluginFiles($pluginPath);
+        if (!empty($pluginsToInstall)) {
+          if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
+            echo 'Installing plugin contained within directory :' . $pluginPath->getBasename() . '.' . "\n";
+            $this->copyPluginFiles($pluginPath);
+          }
         }
       }
     }
