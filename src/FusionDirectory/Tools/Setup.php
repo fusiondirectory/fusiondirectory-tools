@@ -399,7 +399,7 @@ class Setup extends Cli\LdapApplication
               if (!empty($memberNode)) {
                 $memberNode->assert();
               }
-              if ($memberNode->count() === 1) {
+              if (!empty($memberNode) && $memberNode->count() === 1) {
                 printf('%s is a valid admin' . "\n", $dn);
                 return;
               }
