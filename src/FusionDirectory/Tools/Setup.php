@@ -204,7 +204,7 @@ class Setup extends Cli\LdapApplication
 
       /* extract the owner and the group of the directory */
       $pwuid = posix_getpwuid($lstat['uid']);
-      $grgid = posix_getpwuid($lstat['gid']);
+      $grgid = posix_getgrgid($lstat['gid']);
       if (($pwuid === FALSE) || ($grgid === FALSE)) {
         throw new \Exception('Unable to read ' . $dir . ' ownership information' . "\n");
       }
@@ -218,7 +218,7 @@ class Setup extends Cli\LdapApplication
         if ($this->askYnQuestion("$dir is not set properly, do you want to fix it ?: ")) {
           if ($dir_owner !== $user) {
             if ($this->verbose()) {
-              printf('Setting %s ower to %s' . "\n", $dir, $user);
+              printf('Setting %s owner to %s' . "\n", $dir, $user);
             }
             if (chown($dir, $user) === FALSE) {
               throw new \Exception('Unable to change ' . $dir . ' owner' . "\n");
@@ -254,7 +254,7 @@ class Setup extends Cli\LdapApplication
         }
         mkdir($dir, $rights, TRUE);
         if ($this->verbose()) {
-          printf('Setting %s ower to %s' . "\n", $dir, $user);
+          printf('Setting %s owner to %s' . "\n", $dir, $user);
         }
         if (chown($dir, $user) === FALSE) {
           throw new \Exception('Unable to change ' . $dir . ' owner' . "\n");
