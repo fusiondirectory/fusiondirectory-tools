@@ -143,14 +143,18 @@ class PluginsManager extends Cli\Application
           exit;
         }
 
-        if (!empty($locations)) {
-          foreach ($locations as $key => $value) {
-            if ($key == $userInput) {
-              //changing configuration default location to the on specified.
-              $this->conf['default'] = $this->conf[$value];
-            }
+        /** @var $locations */ //Made for PHPStan
+        foreach ($locations as $key => $value) {
+          if ($key == $userInput) {
+            //changing configuration default location to the on specified.
+            $this->conf['default'] = $this->conf[$value];
           }
         }
+
+        // In case only one location but 'default' name has changed.
+      } else if (empty($this->conf['default'])) {
+        $key = array_key_first($this->conf);
+        $this->conf['default'] = $this->conf[$key];
       }
 
       $this->ldap = new Ldap\Link($this->conf['default']['uri']);
