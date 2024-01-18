@@ -143,7 +143,6 @@ class PluginsManager extends Cli\Application
           exit;
         }
 
-        /** @var $locations */ //Made for PHPStan
         foreach ($locations as $key => $value) {
           if ($key == $userInput) {
             //changing configuration default location to the on specified.
