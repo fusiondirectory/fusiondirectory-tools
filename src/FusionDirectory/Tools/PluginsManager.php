@@ -127,6 +127,32 @@ class PluginsManager extends Cli\Application
       $setup      = new Setup();
       $this->conf = $setup->loadFusionDirectoryConfigurationFile();
 
+      // If multiple location found
+      if (count($this->conf) > 1) {
+        // Only printout the name of the array (key) representing the name of the location set in FD configuration
+        $i = 1;
+        foreach ($this->conf as $key => $value) {
+          $locations[$i] = $key;
+          echo $i . ': ' . $key . PHP_EOL;
+          $i++;
+        }
+        $userInput = $this->askUserInput('Multiple FusionDirectory location found, which one to use ?');
+
+        if (!$userInput) {
+          echo "Failed to parse " . $userInput . PHP_EOL;
+          exit;
+        }
+
+        if (!empty($locations)) {
+          foreach ($locations as $key => $value) {
+            if ($key == $userInput) {
+              //changing configuration default location to the on specified.
+              $this->conf['default'] = $this->conf[$value];
+            }
+          }
+        }
+      }
+
       $this->ldap = new Ldap\Link($this->conf['default']['uri']);
       $this->ldap->bind($this->conf['default']['bind_dn'], $this->conf['default']['bind_pwd']);
 
@@ -253,8 +279,6 @@ class PluginsManager extends Cli\Application
         throw $e;
       }
       exit;
-
-
     }
   }
 
@@ -391,8 +415,10 @@ class PluginsManager extends Cli\Application
       }
     }
 
+    // Copy files if destination plugin folder only contains one plugin.
     if (!empty($lonePlugin) && $lonePlugin === TRUE) {
       $this->copyPluginFiles($path);
+      // Manage multiple plugins installation.
     } else {
       foreach ($plugins as $i => $pluginPath) {
         if (!empty($pluginsToInstall)) {
@@ -478,7 +504,7 @@ class PluginsManager extends Cli\Application
                 $this->removeFile($this->vars['fd_config_dir'] . '/' . basename(dirname($final_path)) . '/' . basename($final_path));
               }
               break;
-            case 'local':
+            case 'locale':
               $this->removeFile($this->vars['fd_home'] . '/locale/plugins/' . $pluginName . '/locale/' . basename(dirname($final_path)) . '/' . basename($final_path));
               break;
           }
