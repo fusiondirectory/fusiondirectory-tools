@@ -44,37 +44,37 @@ class Setup extends Cli\LdapApplication
   public function __construct ()
   {
     $this->vars = [
-      'fd_home'           => '/usr/share/fusiondirectory',
-      'fd_cache'          => '/var/cache/fusiondirectory',
-      'fd_config_dir'     => '/etc/fusiondirectory',
-      'fd_smarty_path'    => '/usr/share/php/smarty3/Smarty.class.php',
-      'fd_spool_dir'      => '/var/spool/fusiondirectory',
-      'config_file'       => 'fusiondirectory.conf',
-      'secrets_file'      => 'fusiondirectory.secrets',
-      'locale_dir'        => 'locale',
-      'class_cache'       => 'class.cache',
-      'locale_cache_dir'  => 'locale',
-      'tmp_dir'           => 'tmp',
-      'fai_log_dir'       => 'fai',
-      'template_dir'      => 'template'
+      'fd_home'          => '/usr/share/fusiondirectory',
+      'fd_cache'         => '/var/cache/fusiondirectory',
+      'fd_config_dir'    => '/etc/fusiondirectory',
+      'fd_smarty_path'   => '/usr/share/php/smarty3/Smarty.class.php',
+      'fd_spool_dir'     => '/var/spool/fusiondirectory',
+      'config_file'      => 'fusiondirectory.conf',
+      'secrets_file'     => 'fusiondirectory.secrets',
+      'locale_dir'       => 'locale',
+      'class_cache'      => 'class.cache',
+      'locale_cache_dir' => 'locale',
+      'tmp_dir'          => 'tmp',
+      'fai_log_dir'      => 'fai',
+      'template_dir'     => 'template'
     ];
 
     parent::__construct();
 
-    $this->options  = array_merge(
-      // Coming from Trait varHandling
+    $this->options = array_merge(
+    // Coming from Trait varHandling
       $this->getVarOptions(),
       // Careful, an option ending by : will receive args passed by user.
       [
-        'write-vars' => [
+        'write-vars'        => [
           'help'    => 'Choose FusionDirectory Directories',
           'command' => 'cmdWriteVars',
         ],
-        'show-version'  => [
+        'show-version'      => [
           'help'    => 'Show FusionDirectory version from variables_common.inc',
           'command' => 'cmdShowVersion',
         ],
-        'check-config'  => [
+        'check-config'      => [
           'help'    => 'Checking FusionDirectory\'s config file',
           'command' => 'cmdCheckConfigFile',
         ],
@@ -82,19 +82,19 @@ class Setup extends Cli\LdapApplication
           'help'    => 'Checking FusionDirectory\'s directories',
           'command' => 'cmdCheckDirectories',
         ],
-        'show-config' => [
+        'show-config'       => [
           'help'    => 'Show an LDAP dump of the FusionDirectory configuration',
           'command' => 'cmdShowConfiguration',
         ],
-        'set-config:' => [
+        'set-config:'       => [
           'help'    => 'Set the value in LDAP of a FusionDirectory configuration field',
           'command' => 'cmdSetConfigVar',
         ],
-        'check-ldap' => [
+        'check-ldap'        => [
           'help'    => 'Checking your LDAP tree',
           'command' => 'cmdCheckLdap',
         ],
-        'update-cache' => [
+        'update-cache'      => [
           'help'    => 'Update class.cache file',
           'command' => 'cmdUpdateCache',
         ],
@@ -102,11 +102,11 @@ class Setup extends Cli\LdapApplication
           'help'    => 'Encrypt passwords in fusiondirectory.conf',
           'command' => 'cmdEncryptPasswords',
         ],
-        'show-passwords' => [
+        'show-passwords'    => [
           'help'    => 'Show passwords from fusiondirectory.conf',
           'command' => 'cmdShowPasswords',
         ],
-        'update-locales'  => [
+        'update-locales'    => [
           'help'    => 'Update translation files',
           'command' => 'cmdUpdateLocales',
         ],
@@ -142,9 +142,9 @@ class Setup extends Cli\LdapApplication
       if (isset($this->options[$key]['command']) && ($value > 0)) {
         printf("# %s\n", $this->options[$key]['help']);
         call_user_func([$this, $this->options[$key]['command']]);
-      } elseif (isset($this->options[$key.':']['command'])) {
-        printf("# %s: %s\n", $this->options[$key.':']['help'], implode(', ', $value));
-        call_user_func([$this, $this->options[$key.':']['command']], $value);
+      } elseif (isset($this->options[$key . ':']['command'])) {
+        printf("# %s: %s\n", $this->options[$key . ':']['help'], implode(', ', $value));
+        call_user_func([$this, $this->options[$key . ':']['command']], $value);
       }
     }
   }
@@ -155,8 +155,8 @@ class Setup extends Cli\LdapApplication
    */
   public function loadFusionDirectoryConfigurationFile (): array
   {
-    $this->configFilePath   = $this->vars['fd_config_dir'].'/'.$this->vars['config_file'];
-    $this->secretsFilePath  = $this->vars['fd_config_dir'].'/'.$this->vars['secrets_file'];
+    $this->configFilePath  = $this->vars['fd_config_dir'] . '/' . $this->vars['config_file'];
+    $this->secretsFilePath = $this->vars['fd_config_dir'] . '/' . $this->vars['secrets_file'];
 
     return parent::loadFusionDirectoryConfigurationFile();
   }
@@ -180,11 +180,11 @@ class Setup extends Cli\LdapApplication
     } elseif (file_exists('/etc/arch-release')) {
       $apacheGroup = 'http';
     } else {
-      echo '! Looks like you are not a Debian, Suse, Redhat or Mageia, I don\'t know your distribution !'."\n";
+      echo '! Looks like you are not a Debian, Suse, Redhat or Mageia, I don\'t know your distribution !' . "\n";
       $apacheGroup = $this->askUserInput('What is your apache group?');
     }
     if ($this->verbose()) {
-      printf('Detected apache group to be %s'."\n", $apacheGroup);
+      printf('Detected apache group to be %s' . "\n", $apacheGroup);
     }
 
     return $apacheGroup;
@@ -199,14 +199,14 @@ class Setup extends Cli\LdapApplication
       echo "$dir exists…\n";
       $lstat = lstat($dir);
       if ($lstat === FALSE) {
-        throw new \Exception('Unable to read '.$dir.' permissions'."\n");
+        throw new \Exception('Unable to read ' . $dir . ' permissions' . "\n");
       }
 
       /* extract the owner and the group of the directory */
       $pwuid = posix_getpwuid($lstat['uid']);
       $grgid = posix_getpwuid($lstat['gid']);
       if (($pwuid === FALSE) || ($grgid === FALSE)) {
-        throw new \Exception('Unable to read '.$dir.' ownership information'."\n");
+        throw new \Exception('Unable to read ' . $dir . ' ownership information' . "\n");
       }
       $dir_owner = $pwuid['name'];
       $dir_group = $grgid['name'];
@@ -214,59 +214,59 @@ class Setup extends Cli\LdapApplication
       /* extract the dir's rights */
       $dir_rights = ($lstat['mode'] & 000777);
 
-      if ( ($dir_owner !== $user) || ($dir_group !== $group) || ($dir_rights !== $rights) ) {
-        if ( $this->askYnQuestion("$dir is not set properly, do you want to fix it ?: ") ) {
+      if (($dir_owner !== $user) || ($dir_group !== $group) || ($dir_rights !== $rights)) {
+        if ($this->askYnQuestion("$dir is not set properly, do you want to fix it ?: ")) {
           if ($dir_owner !== $user) {
             if ($this->verbose()) {
-              printf('Setting %s ower to %s'."\n", $dir, $user);
+              printf('Setting %s ower to %s' . "\n", $dir, $user);
             }
             if (chown($dir, $user) === FALSE) {
-              throw new \Exception('Unable to change '.$dir.' owner'."\n");
+              throw new \Exception('Unable to change ' . $dir . ' owner' . "\n");
             }
           }
           if ($dir_group !== $group) {
             if ($this->verbose()) {
-              printf('Setting %s group to %s'."\n", $dir, $group);
+              printf('Setting %s group to %s' . "\n", $dir, $group);
             }
             if (chgrp($dir, $group) === FALSE) {
-              throw new \Exception('Unable to change '.$dir.' group'."\n");
+              throw new \Exception('Unable to change ' . $dir . ' group' . "\n");
             }
           }
           if ($dir_rights !== $rights) {
             if ($this->verbose()) {
-              printf('Setting %s rights to %o'."\n", $dir, $rights);
+              printf('Setting %s rights to %o' . "\n", $dir, $rights);
             }
             if (chmod($dir, $rights) === FALSE) {
-              throw new \Exception('Unable to change '.$dir.' rights'."\n");
+              throw new \Exception('Unable to change ' . $dir . ' rights' . "\n");
             }
           }
         } else {
-          echo 'Skipping…'."\n";
+          echo 'Skipping…' . "\n";
         }
       } else {
-        echo 'Rights on "'.$dir.'" are correct'."\n";
+        echo 'Rights on "' . $dir . '" are correct' . "\n";
       }
     } elseif ($create) {
       if ($this->askYnQuestion("Directory $dir doesn't exists, do you want to create it ?: ")) {
         /* Create the directory, and change the rights */
         if ($this->verbose()) {
-          printf('Creating %s with rights %o'."\n", $dir, $rights);
+          printf('Creating %s with rights %o' . "\n", $dir, $rights);
         }
         mkdir($dir, $rights, TRUE);
         if ($this->verbose()) {
-          printf('Setting %s ower to %s'."\n", $dir, $user);
+          printf('Setting %s ower to %s' . "\n", $dir, $user);
         }
         if (chown($dir, $user) === FALSE) {
-          throw new \Exception('Unable to change '.$dir.' owner'."\n");
+          throw new \Exception('Unable to change ' . $dir . ' owner' . "\n");
         }
         if ($this->verbose()) {
-          printf('Setting %s group to %s'."\n", $dir, $group);
+          printf('Setting %s group to %s' . "\n", $dir, $group);
         }
         if (chgrp($dir, $group) === FALSE) {
-          throw new \Exception('Unable to change '.$dir.' group'."\n");
+          throw new \Exception('Unable to change ' . $dir . ' group' . "\n");
         }
       } else {
-        echo 'Skipping…'."\n";
+        echo 'Skipping…' . "\n";
       }
     } else {
       return FALSE;
@@ -284,9 +284,9 @@ class Setup extends Cli\LdapApplication
     $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
 
     if ($this->verbose()) {
-      printf('Fetching FusionDirectory configuration from %s'."\n", static::CONFIGRDN.','.$this->base);
+      printf('Fetching FusionDirectory configuration from %s' . "\n", static::CONFIGRDN . ',' . $this->base);
     }
-    $list = $this->ldap->search(static::CONFIGRDN.','.$this->base, '(objectClass=fusionDirectoryConf)', $attrs, 'base');
+    $list = $this->ldap->search(static::CONFIGRDN . ',' . $this->base, '(objectClass=fusionDirectoryConf)', $attrs, 'base');
     $list->assert();
 
     if ($list->count() < 1) {
@@ -316,7 +316,7 @@ class Setup extends Cli\LdapApplication
     } catch (Ldap\Exception $e) {
       if ($e->getCode() === 32) {
         if ($this->verbose()) {
-          printf('Branch %s does not exists'."\n", $dn);
+          printf('Branch %s does not exists' . "\n", $dn);
         }
         return FALSE;
       }
@@ -336,10 +336,10 @@ class Setup extends Cli\LdapApplication
       throw new \Exception("Can’t create branch of unknown type $ou");
     }
     if ($this->verbose()) {
-      printf('Creating branch %s'."\n", $ou.','.$this->base);
+      printf('Creating branch %s' . "\n", $ou . ',' . $this->base);
     }
     $branchAdd = $this->ldap->add(
-      $ou.','.$this->base,
+      $ou . ',' . $this->base,
       [
         'ou'          => $m[1],
         'objectClass' => 'organizationalUnit',
@@ -363,49 +363,66 @@ class Setup extends Cli\LdapApplication
       ['gosaAclTemplate']
     );
     $adminRoles->assert();
-    $dns    = [];
-    $roles  = [];
-    $count  = 0;
+    $dns   = [];
+    $roles = [];
+    $count = 0;
     foreach ($adminRoles as $dn => $entry) {
       $role_dn64 = base64_encode($dn);
-      $roles[] = $role_dn64;
-      printf('Role "%s" is an admin ACL role'."\n", $dn);
+      $roles[]   = $role_dn64;
+      printf('Role "%s" is an admin ACL role' . "\n", $dn);
 
       /* Search for base-wide assignments */
       $assignments = $this->ldap->search(
         $this->base,
-        '(&(objectClass=gosaAcl)(gosaAclEntry=*:subtree:'.ldap_escape($role_dn64, '', LDAP_ESCAPE_FILTER).':*))',
+        '(&(objectClass=gosaAcl)(gosaAclEntry=*:subtree:' . ldap_escape($role_dn64, '', LDAP_ESCAPE_FILTER) . ':*))',
         ['gosaAclEntry'],
         'base',
       );
       $assignments->assert();
       foreach ($assignments as $assignment) {
         foreach ($assignment['gosaAclEntry'] as $line) {
-          if (preg_match('/^.:subtree:\Q'.$role_dn64.'\E/', $line)) {
-            $parts    = explode(':', $line, 4);
-            $members  = explode(',', $parts[3]);
+          if (preg_match('/^.:subtree:\Q' . $role_dn64 . '\E/', $line)) {
+            $parts   = explode(':', $line, 4);
+            $members = explode(',', $parts[3]);
             foreach ($members as $member) {
               /* Is this an existing user? */
               $dn = base64_decode($member);
-              $memberNode = $this->ldap->search($dn, '(objectClass=inetOrgPerson)', [], 'base');
+              try {
+                $memberNode = $this->ldap->search($dn, '(objectClass=inetOrgPerson)', [], 'base');
+              } catch (Ldap\Exception $e) {
+                if ($e->getCode() === 32) {
+                  if ($this->verbose()) {
+                    printf('%s does not exists' . "\n", $dn);
+                  }
+                }
+              }
               $memberNode->assert();
               if ($memberNode->count() === 1) {
-                printf('%s is a valid admin'."\n", $dn);
+                printf('%s is a valid admin' . "\n", $dn);
                 return;
               }
               /* Is this a group? */
-              $memberNode = $this->ldap->search($dn, '(objectClass=posixGroup)', ['memberUid'], 'base');
+              try {
+                $memberNode = $this->ldap->search($dn, '(objectClass=posixGroup)', ['memberUid'], 'base');
+              } catch (Ldap\Exception $e) {
+                if ($e->getCode() === 32) {
+                  if ($this->verbose()) {
+                    printf('%s does not exists' . "\n", $dn);
+                  }
+                }
+              }
+
               $memberNode->assert();
               if ($memberNode->count() === 1) {
                 /* Find group members */
                 $memberNode->rewind();
                 $memberEntry  = $memberNode->current();
-                $filter = '(&(objectClass=inetOrgPerson)(|(uid='.implode(')(uid=', $memberEntry['memberUid']).')))';
+                $filter       = '(&(objectClass=inetOrgPerson)(|(uid=' . implode(')(uid=', $memberEntry['memberUid']) . ')))';
                 $groupMembers = $this->ldap->search($this->base, $filter);
                 $groupMembers->assert();
                 if ($groupMembers->count() > 0) {
                   $groupMembers->rewind();
-                  printf('%s is a valid admin'."\n", $groupMembers->key());
+                  printf('%s is a valid admin' . "\n", $groupMembers->key());
                   return;
                 }
               } else {
@@ -418,10 +435,10 @@ class Setup extends Cli\LdapApplication
       $count++;
     }
     if ($count < 1) {
-      echo '! There is no admin ACL role'."\n";
+      echo '! There is no admin ACL role' . "\n";
     }
     foreach ($dns as $dn) {
-      printf('! %s is supposed to be admin but does not exists'."\n", $dn);
+      printf('! %s is supposed to be admin but does not exists' . "\n", $dn);
     }
     if ($this->askYnQuestion('No valid admin account found, do you want to create it ?')) {
       $this->addLdapAdmin($config, $peopleBranches, $roles);
@@ -440,12 +457,12 @@ class Setup extends Cli\LdapApplication
 
     if (isset($config['fdForcePasswordDefaultHash'][0]) && isset($config['fdPasswordDefaultHash'][0])) {
       if (($config['fdForcePasswordDefaultHash'][0] === 'TRUE') && (strtolower($config['fdPasswordDefaultHash'][0]) !== 'ssha')) {
-        echo 'Warning: Administator password will be hashed with ssha instead of forced default '.$config['fdPasswordDefaultHash'][0]."\n";
+        echo 'Warning: Administator password will be hashed with ssha instead of forced default ' . $config['fdPasswordDefaultHash'][0] . "\n";
       }
     }
 
     /* Sort branches by length to have the root one first */
-    usort($peopleBranches, function($a, $b) {
+    usort($peopleBranches, function ($a, $b) {
       return strlen($b) <=> strlen($a);
     });
 
@@ -456,12 +473,12 @@ class Setup extends Cli\LdapApplication
     foreach ($peopleBranches as $peopleBranch) {
       $list = $this->ldap->search(
         $peopleBranch,
-        '(&(objectClass=inetOrgPerson)(uid='.ldap_escape($fdAdminUid, '', LDAP_ESCAPE_FILTER).'))',
+        '(&(objectClass=inetOrgPerson)(uid=' . ldap_escape($fdAdminUid, '', LDAP_ESCAPE_FILTER) . '))',
         ['uid']
       );
       $list->assert();
       if ($list->count() > 0) {
-        printf('User %s already existing, adding admin acl to it'."\n", $fdAdminUid);
+        printf('User %s already existing, adding admin acl to it' . "\n", $fdAdminUid);
         $list->rewind();
         $dn = $list->key();
         break;
@@ -469,8 +486,8 @@ class Setup extends Cli\LdapApplication
     }
 
     if ($dn === '') {
-      $fdAdminPwd         = $this->askUserInput('Please enter FusionDirectory\'s admin password', '', TRUE);
-      $fdAdminPwdConfirm  = $this->askUserInput('Please enter it again', '', TRUE);
+      $fdAdminPwd        = $this->askUserInput('Please enter FusionDirectory\'s admin password', '', TRUE);
+      $fdAdminPwdConfirm = $this->askUserInput('Please enter it again', '', TRUE);
 
       /* While the confirmation password is not the same than the first one */
       while (($fdAdminPwdConfirm !== $fdAdminPwd) && ($fdAdminPwdConfirm !== 'quit')) {
@@ -481,26 +498,26 @@ class Setup extends Cli\LdapApplication
       }
 
       /* FIXME: Directly call FD code here? (either to hash password, or even to create user) */
-      $salt = substr(pack('h*', md5((string)random_int(0, PHP_INT_MAX))), 0, 8);
-      $salt = substr(pack('H*', sha1($salt.$fdAdminPwd)), 0, 4);
-      $hashedPasswd  = '{SSHA}'.base64_encode(pack('H*', sha1($fdAdminPwd.$salt)).$salt);
-      $obj = [
-        'cn'            => 'System Administrator',
-        'givenname'     => 'System',
-        'sn'            => 'Administrator',
-        'uid'           => $fdAdminUid,
-        'objectclass'   => ['person', 'organizationalPerson', 'inetOrgPerson'],
-        'userPassword'  => $hashedPasswd,
+      $salt         = substr(pack('h*', md5((string)random_int(0, PHP_INT_MAX))), 0, 8);
+      $salt         = substr(pack('H*', sha1($salt . $fdAdminPwd)), 0, 4);
+      $hashedPasswd = '{SSHA}' . base64_encode(pack('H*', sha1($fdAdminPwd . $salt)) . $salt);
+      $obj          = [
+        'cn'           => 'System Administrator',
+        'givenname'    => 'System',
+        'sn'           => 'Administrator',
+        'uid'          => $fdAdminUid,
+        'objectclass'  => ['person', 'organizationalPerson', 'inetOrgPerson'],
+        'userPassword' => $hashedPasswd,
       ];
       if (!isset($obj[$attr])) {
-        printf('Error: invalid account primary attribute %s, using uid'."\n", $attr);
+        printf('Error: invalid account primary attribute %s, using uid' . "\n", $attr);
         $attr = 'uid';
       }
-      $dn = $attr.'='.ldap_escape($obj[$attr], '', LDAP_ESCAPE_DN).','.$peopleBranches[0];
+      $dn = $attr . '=' . ldap_escape($obj[$attr], '', LDAP_ESCAPE_DN) . ',' . $peopleBranches[0];
 
       /* Add the administator user object */
       if ($this->verbose()) {
-        printf('Creating user %s'."\n", $dn);
+        printf('Creating user %s' . "\n", $dn);
       }
       $adminAdd = $this->ldap->add($dn, $obj);
       $adminAdd->assert();
@@ -509,7 +526,7 @@ class Setup extends Cli\LdapApplication
     /* Create admin role if not existing */
     if (count($roles) === 0) {
       $roleDn = $this->createRole('admin', 'all;cmdrw', ($config['fdAclRoleRDN'][0] ?? 'ou=aclroles'));
-      $role = base64_encode($roleDn);
+      $role   = base64_encode($roleDn);
     } else {
       $role = $roles[0];
     }
@@ -522,20 +539,20 @@ class Setup extends Cli\LdapApplication
     );
     $acls->assert();
     if ($acls->count() === 0) {
-      throw new \Exception('Failed to search acls in "'.$this->base.'"');
+      throw new \Exception('Failed to search acls in "' . $this->base . '"');
     }
     $acls->rewind();
     $oclass = $acls->current()['objectClass'];
     /* Add admin acl */
-    $newacl = ['0:subtree:'.$role.':'.base64_encode($dn)];
+    $newacl = ['0:subtree:' . $role . ':' . base64_encode($dn)];
     if (!in_array('gosaAcl', $oclass)) {
       $oclass[] = 'gosaAcl';
     } else {
       $acl = ($acls->current()['gosaAclEntry'] ?? []);
-      $i = 1;
+      $i   = 1;
       foreach ($acl as $line) {
         /* Reorder existing non-admin acls */
-        $line     = preg_replace('/^\d+:/', $i.':', $line);
+        $line     = preg_replace('/^\d+:/', $i . ':', $line);
         $newacl[] = $line;
         $i++;
       }
@@ -543,8 +560,8 @@ class Setup extends Cli\LdapApplication
     $result = $this->ldap->mod_replace(
       $this->base,
       [
-        'objectClass'   => $oclass,
-        'gosaAclEntry'  => $newacl,
+        'objectClass'  => $oclass,
+        'gosaAclEntry' => $newacl,
       ]
     );
     $result->assert();
@@ -558,16 +575,16 @@ class Setup extends Cli\LdapApplication
     $role = [
       'cn'              => $cn,
       'objectclass'     => ['gosaRole'],
-      'gosaAclTemplate' => '0:'.$acl,
+      'gosaAclTemplate' => '0:' . $acl,
     ];
 
-    if (!$this->branchExists($aclrolerdn.','.$this->base)) {
+    if (!$this->branchExists($aclrolerdn . ',' . $this->base)) {
       $this->createBranch($aclrolerdn);
     }
 
-    $roleDn = 'cn='.ldap_escape($cn, '', LDAP_ESCAPE_DN).','.$aclrolerdn.','.$this->base;
+    $roleDn = 'cn=' . ldap_escape($cn, '', LDAP_ESCAPE_DN) . ',' . $aclrolerdn . ',' . $this->base;
     if ($this->verbose()) {
-      printf('Creating role %s'."\n", $roleDn);
+      printf('Creating role %s' . "\n", $roleDn);
     }
     $roleAdd = $this->ldap->add($roleDn, $role);
     $roleAdd->assert();
@@ -581,20 +598,20 @@ class Setup extends Cli\LdapApplication
   protected function getClassesList (string $path): array
   {
     /* Recursive iterator on the directory */
-    $Directory  = new \RecursiveDirectoryIterator($path, \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_PATHNAME);
+    $Directory = new \RecursiveDirectoryIterator($path, \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_PATHNAME);
     /* Flatten the iterator to iterate directly on all files in the tree */
-    $Iterator   = new \RecursiveIteratorIterator($Directory);
+    $Iterator = new \RecursiveIteratorIterator($Directory);
     /* Filter by regex */
-    $Regex      = new \RegexIterator($Iterator, '/^.+\.inc$/i');
+    $Regex = new \RegexIterator($Iterator, '/^.+\.inc$/i');
 
     $classes = [];
     foreach ($Regex as $filepath) {
       if (!preg_match('/.*smarty.*/', $filepath)) {
-        $lines    = file($filepath);
+        $lines = file($filepath);
         if ($lines === FALSE) {
           continue;
         }
-        $filepath = preg_replace('/^'.preg_quote($this->vars['fd_home'], '/').'/', '', $filepath);
+        $filepath = preg_replace('/^' . preg_quote($this->vars['fd_home'], '/') . '/', '', $filepath);
         foreach ($lines as $line) {
           if (preg_match('/^((abstract )?class|interface)\s*(\w+).*/', $line, $m)) {
             $classes[(string)$m[3]] = $filepath;
@@ -612,16 +629,16 @@ class Setup extends Cli\LdapApplication
   protected function setFileRights (string $path, int $rights, string $user, string $group): void
   {
     if ($this->verbose()) {
-      printf('Setting file %s rights and owner to %o %s:%s'."\n", $path, $rights, $user, $group);
+      printf('Setting file %s rights and owner to %o %s:%s' . "\n", $path, $rights, $user, $group);
     }
     if (chmod($path, $rights) === FALSE) {
-      throw new \Exception('Unable to change "'.$path.'" rights');
+      throw new \Exception('Unable to change "' . $path . '" rights');
     }
     if (chown($path, $user) === FALSE) {
-      throw new \Exception('Unable to change "'.$path.'" owner');
+      throw new \Exception('Unable to change "' . $path . '" owner');
     }
     if (chgrp($path, $group) === FALSE) {
-      throw new \Exception('Unable to change "'.$path.'" group');
+      throw new \Exception('Unable to change "' . $path . '" group');
     }
   }
 
@@ -700,10 +717,10 @@ define("SUPANN_DIR", "{$this->vars['fd_config_dir']}/supann/"); /* FusionDirecto
 define("CLASS_CACHE", "{$this->vars['class_cache']}"); /* name of the class cache */
 EOF;
 
-    $variablesPath = $this->vars['fd_home'].'/include/variables.inc';
-    $success = file_put_contents($variablesPath, $filecontent);
+    $variablesPath = $this->vars['fd_home'] . '/include/variables.inc';
+    $success       = file_put_contents($variablesPath, $filecontent);
     if ($success === FALSE) {
-      throw new \Exception('Failed to write in "'.$variablesPath.'"');
+      throw new \Exception('Failed to write in "' . $variablesPath . '"');
     }
   }
 
@@ -712,24 +729,24 @@ EOF;
    */
   protected function cmdShowVersion (): void
   {
-    $variablesPath = $this->vars['fd_home'].'/include/variables_common.inc';
+    $variablesPath = $this->vars['fd_home'] . '/include/variables_common.inc';
     if ($this->verbose()) {
-      printf('Reading version information from %s'."\n", $variablesPath);
+      printf('Reading version information from %s' . "\n", $variablesPath);
     }
     if (file_exists($variablesPath)) {
       $lines = file($variablesPath, FILE_SKIP_EMPTY_LINES);
       if ($lines === FALSE) {
-        throw new \Exception('Could not open "'.$variablesPath.'"');
+        throw new \Exception('Could not open "' . $variablesPath . '"');
       }
       foreach ($lines as $line) {
         if (preg_match('/^define\\s*\\(["\']FD_VERSION["\'],\\s*"([^"]+)"\\);/', $line, $m)) {
-          echo 'FusionDirectory version is '.$m[1]."\n";
+          echo 'FusionDirectory version is ' . $m[1] . "\n";
           return;
         }
       }
-      throw new \Exception('File "'.$variablesPath.'" does not contain version information'."\n");
+      throw new \Exception('File "' . $variablesPath . '" does not contain version information' . "\n");
     } else {
-      throw new \Exception('File "'.$variablesPath.'" does not exists, can’t find out FusionDirectory version'."\n");
+      throw new \Exception('File "' . $variablesPath . '" does not exists, can’t find out FusionDirectory version' . "\n");
     }
   }
 
@@ -740,7 +757,7 @@ EOF;
   {
     $apache_group = $this->getApacheGroup();
 
-    if (!$this->checkRights($this->vars['fd_config_dir'].'/'.$this->vars['config_file'], 'root', $apache_group, 0640, FALSE)) {
+    if (!$this->checkRights($this->vars['fd_config_dir'] . '/' . $this->vars['config_file'], 'root', $apache_group, 0640, FALSE)) {
       throw new \Exception('The config file does not exists!');
     }
   }
@@ -759,9 +776,9 @@ EOF;
     $apache_config_dirs = [
       $this->vars['fd_spool_dir'],
       $this->vars['fd_cache'],
-      $this->vars['fd_cache'].'/'.$this->vars['tmp_dir'],
-      $this->vars['fd_cache'].'/'.$this->vars['fai_log_dir'],
-      $this->vars['fd_cache'].'/'.$this->vars['template_dir'],
+      $this->vars['fd_cache'] . '/' . $this->vars['tmp_dir'],
+      $this->vars['fd_cache'] . '/' . $this->vars['fai_log_dir'],
+      $this->vars['fd_cache'] . '/' . $this->vars['template_dir'],
     ];
 
     foreach ($root_config_dirs as $dir) {
@@ -786,7 +803,7 @@ EOF;
         if ($i === 0) {
           printf("%40s: %s\n", $attribute, $value);
         } else {
-          printf(str_repeat(' ', 40)."  %s\n", $value);
+          printf(str_repeat(' ', 40) . "  %s\n", $value);
         }
       }
     }
@@ -804,15 +821,15 @@ EOF;
       if (preg_match('/^([^=]+)=(.+)$/', $var, $m)) {
         [$var, $value] = [(string)$m[1], (string)$m[2]];
         if (!(preg_match('/^fd/', $var))) {
-          $var = 'fd'.$var;
+          $var = 'fd' . $var;
         }
 
-        printf('Setting configuration var %s to "%s"'."\n", $var, $value);
+        printf('Setting configuration var %s to "%s"' . "\n", $var, $value);
 
-        $result = $this->ldap->mod_replace(static::CONFIGRDN.','.$this->base, [$var => $value]);
+        $result = $this->ldap->mod_replace(static::CONFIGRDN . ',' . $this->base, [$var => $value]);
         $result->assert();
       } else {
-        throw new \Exception('Incorrect syntax for --set-config: "'.$var.'". Use var=value');
+        throw new \Exception('Incorrect syntax for --set-config: "' . $var . '". Use var=value');
       }
     }
   }
@@ -826,7 +843,7 @@ EOF;
 
     $admin_add = "";
     [$configdn, $config] = $this->readLdapConfiguration();
-    $userrdn = ($config['fdUserRDN'][0] ?? '');
+    $userrdn  = ($config['fdUserRDN'][0] ?? '');
     $grouprdn = ($config['fdOGroupRDN'][0] ?? '');
 
     if ($userrdn !== '') {
@@ -839,30 +856,30 @@ EOF;
       }
       $people->assertIterationWentFine();
 
-      if ($this->branchExists($userrdn.','.$this->base)) {
+      if ($this->branchExists($userrdn . ',' . $this->base)) {
         /* if people branch exists */
         $this->checkAdmin($config, $peopleBranches);
       } else {
         /* if ou=people doesn't exists */
-        echo '! '.$userrdn.','.$this->base.' not found in your LDAP directory'."\n";
+        echo '! ' . $userrdn . ',' . $this->base . ' not found in your LDAP directory' . "\n";
 
         if ($this->askYnQuestion('Do you want to create it ?: ')) {
           $this->createBranch($userrdn);
-          $peopleBranches[] = $userrdn.','.$this->base;
+          $peopleBranches[] = $userrdn . ',' . $this->base;
           $this->checkAdmin($config, $peopleBranches);
         } else {
-          echo 'Skipping…'."\n";
+          echo 'Skipping…' . "\n";
         }
       }
     }
 
-    if (!$this->branchExists($grouprdn.','.$this->base)) {
-      echo '! '.$grouprdn.','.$this->base.' not found in your LDAP directory'."\n";
+    if (!$this->branchExists($grouprdn . ',' . $this->base)) {
+      echo '! ' . $grouprdn . ',' . $this->base . ' not found in your LDAP directory' . "\n";
 
       if ($this->askYnQuestion('Do you want to create it ?: ')) {
         $this->createBranch($grouprdn);
       } else {
-        echo 'Skipping…'."\n";
+        echo 'Skipping…' . "\n";
       }
     }
 
@@ -873,30 +890,30 @@ EOF;
       $faiclass = $entry['FAIclass'][0];
       $profiles = explode(' ', $faiclass);
       if (count($profiles) > 2) {
-        printf('! System or group "%s" have more than one FAI profile : %s'."\n", $entry['cn'][0], $faiclass);
+        printf('! System or group "%s" have more than one FAI profile : %s' . "\n", $entry['cn'][0], $faiclass);
       } elseif (count($profiles) < 2) {
-        printf('! System or group "%s" have no release set in its FAIclass : %s'."\n", $entry['cn'][0], $faiclass);
+        printf('! System or group "%s" have no release set in its FAIclass : %s' . "\n", $entry['cn'][0], $faiclass);
       }
     }
 
     /* Search for old config dn */
-    if ($this->branchExists('cn=fusiondirectory,ou=configs,'.$this->base)) {
-      printf('! There is a configuration in cn=fusiondirectory,ou=configs,%s in your LDAP directory'."\n", $this->base);
-      printf('! The correct configuration dn is now %s,%s'."\n", static::CONFIGRDN, $this->base);
-      printf('! FusionDirectory will not read your configuration at its current dn'."\n");
+    if ($this->branchExists('cn=fusiondirectory,ou=configs,' . $this->base)) {
+      printf('! There is a configuration in cn=fusiondirectory,ou=configs,%s in your LDAP directory' . "\n", $this->base);
+      printf('! The correct configuration dn is now %s,%s' . "\n", static::CONFIGRDN, $this->base);
+      printf('! FusionDirectory will not read your configuration at its current dn' . "\n");
 
       if ($this->askYnQuestion('Do you want to move and rename this entry? ')) {
-        if (!$this->branchExists('ou=fusiondirectory,'.$this->base)) {
+        if (!$this->branchExists('ou=fusiondirectory,' . $this->base)) {
           $this->createBranch('ou=fusiondirectory');
         }
         $result = $this->ldap->rename(
-          'cn=fusiondirectory,ou=configs,'.$this->base,
-          'cn=config', 'ou=fusiondirectory,'.$this->base,
+          'cn=fusiondirectory,ou=configs,' . $this->base,
+          'cn=config', 'ou=fusiondirectory,' . $this->base,
           TRUE,
         );
         $result->assert();
       } else {
-        echo 'Skipping…'."\n";
+        echo 'Skipping…' . "\n";
       }
     }
   }
@@ -910,9 +927,9 @@ EOF;
 
     /* Create or overwrite cache file */
     if ($this->verbose()) {
-      printf('Updating %s'."\n", $this->vars['fd_cache'].'/'.$this->vars['class_cache']);
+      printf('Updating %s' . "\n", $this->vars['fd_cache'] . '/' . $this->vars['class_cache']);
     }
-    $file = new \SplFileObject($this->vars['fd_cache'].'/'.$this->vars['class_cache'], 'w');
+    $file = new \SplFileObject($this->vars['fd_cache'] . '/' . $this->vars['class_cache'], 'w');
 
     $file->fwrite("<?php\n\$class_mapping = ");
     $file->fwrite(var_export($classes, TRUE));
@@ -924,8 +941,8 @@ EOF;
    */
   protected function cmdEncryptPasswords (): void
   {
-    $fdConfigFile   = $this->vars['fd_config_dir'].'/'.$this->vars['config_file'];
-    $fdSecretsFile  = $this->vars['fd_config_dir'].'/'.$this->vars['secrets_file'];
+    $fdConfigFile  = $this->vars['fd_config_dir'] . '/' . $this->vars['config_file'];
+    $fdSecretsFile = $this->vars['fd_config_dir'] . '/' . $this->vars['secrets_file'];
     if (!file_exists($fdConfigFile)) {
       throw new \Exception("Cannot find a valid configuration file ($fdConfigFile)!");
     }
@@ -937,25 +954,25 @@ EOF;
     $masterKey = Cli\SecretBox::generateSecretKey();
     echo "* Creating \"$fdSecretsFile\"\n";
     $secretsFile = new \SplFileObject($fdSecretsFile, 'w');
-    $secretsFile->fwrite('RequestHeader set FDKEY '.base64_encode($masterKey)."\n");
+    $secretsFile->fwrite('RequestHeader set FDKEY ' . base64_encode($masterKey) . "\n");
     $this->setFileRights($fdSecretsFile, 0600, 'root', 'root');
 
     /* Move original fusiondirectory.conf out of the way and make it unreadable for the web user */
     echo "* Creating backup in \"$fdConfigFile.orig\"\n";
-    if (copy($fdConfigFile, $fdConfigFile.'.orig') === FALSE) {
-      throw new \Exception('Unable to copy '.$fdConfigFile.' to '.$fdConfigFile.'.orig');
+    if (copy($fdConfigFile, $fdConfigFile . '.orig') === FALSE) {
+      throw new \Exception('Unable to copy ' . $fdConfigFile . ' to ' . $fdConfigFile . '.orig');
     }
-    $this->setFileRights($fdConfigFile.'.orig', 0600, 'root', 'root');
+    $this->setFileRights($fdConfigFile . '.orig', 0600, 'root', 'root');
 
     echo "* Loading \"$fdConfigFile\"\n";
     $xml = new \SimpleXMLElement($fdConfigFile, 0, TRUE);
     foreach ($xml->main->location as $loc) {
       $ref = $loc->referral[0];
-      echo '* Encrypting FusionDirectory password for "'.$ref['adminDn'].'"'."\n";
+      echo '* Encrypting FusionDirectory password for "' . $ref['adminDn'] . '"' . "\n";
       $ref['adminPassword'] = Cli\SecretBox::encrypt($ref['adminPassword'], $masterKey);
     }
 
-    echo '* Saving modified "'.$fdConfigFile.'"'."\n";
+    echo '* Saving modified "' . $fdConfigFile . '"' . "\n";
     if ($xml->asXML($fdConfigFile) === FALSE) {
       throw new \Exception("Cannot write modified $fdConfigFile - aborted");
     }
@@ -988,11 +1005,11 @@ EOF;
 
     foreach ($locations as $key => $location) {
       printf("Location \"%s\":\n", $key);
-      printf(" %-15s%s\n", 'URI',           $location['uri']);
-      printf(" %-15s%s\n", 'Base',          $location['base']);
-      printf(" %-15s%s\n", 'Bind DN',       $location['bind_dn']);
+      printf(" %-15s%s\n", 'URI', $location['uri']);
+      printf(" %-15s%s\n", 'Base', $location['base']);
+      printf(" %-15s%s\n", 'Bind DN', $location['bind_dn']);
       printf(" %-15s%s\n", 'Bind password', $location['bind_pwd']);
-      printf(" %-15s%s\n", 'TLS',           ($location['tls'] ? 'on' : 'off'));
+      printf(" %-15s%s\n", 'TLS', ($location['tls'] ? 'on' : 'off'));
     }
   }
 
@@ -1001,18 +1018,18 @@ EOF;
    */
   protected function cmdUpdateLocales (): void
   {
-    $localeDir      = $this->vars['fd_home'].'/'.$this->vars['locale_dir'];
-    $localeCacheDir = $this->vars['fd_cache'].'/'.$this->vars['locale_cache_dir'];
+    $localeDir      = $this->vars['fd_home'] . '/' . $this->vars['locale_dir'];
+    $localeCacheDir = $this->vars['fd_cache'] . '/' . $this->vars['locale_cache_dir'];
 
     if ($this->verbose()) {
-      printf('Searching for locale files in %s'."\n", $localeDir);
+      printf('Searching for locale files in %s' . "\n", $localeDir);
     }
     /* Recursive iterator on the directory */
-    $Directory  = new \RecursiveDirectoryIterator($localeDir, \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_PATHNAME);
+    $Directory = new \RecursiveDirectoryIterator($localeDir, \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_PATHNAME);
     /* Flatten the iterator to iterate directly on all files in the tree */
-    $Iterator   = new \RecursiveIteratorIterator($Directory);
+    $Iterator = new \RecursiveIteratorIterator($Directory);
     /* Filter by regex */
-    $Regex      = new \RegexIterator($Iterator, '/^.+\/fusiondirectory.po$/i');
+    $Regex = new \RegexIterator($Iterator, '/^.+\/fusiondirectory.po$/i');
 
     $allFiles = [];
     foreach ($Regex as $file) {
@@ -1025,42 +1042,42 @@ EOF;
 
     foreach ($allFiles as $lang => $files) {
       /* Directory wich will contain the .mo file for this language */
-      $langCacheDir = $localeCacheDir.'/'.$lang.'/LC_MESSAGES';
+      $langCacheDir = $localeCacheDir . '/' . $lang . '/LC_MESSAGES';
 
       if (!file_exists($langCacheDir)) {
         if (mkdir($langCacheDir, 0777, TRUE) === FALSE) {
-          throw new \Exception('Can\'t create "'.$langCacheDir.'"');
+          throw new \Exception('Can\'t create "' . $langCacheDir . '"');
         }
       }
 
       if ($this->verbose()) {
-        printf('Compiling locales for language %s…'."\n", $lang);
+        printf('Compiling locales for language %s…' . "\n", $lang);
       }
 
       $poFiles = implode(' ', array_map('escapeshellarg', $files));
 
       /* Merge .po files */
-      $command = 'msgcat --use-first '.$poFiles.'>'.$langCacheDir.'/fusiondirectory.po';
+      $command = 'msgcat --use-first ' . $poFiles . '>' . $langCacheDir . '/fusiondirectory.po';
       if ($this->verbose()) {
-        echo '$ '.$command."\n";
+        echo '$ ' . $command . "\n";
       }
       passthru($command, $returnCode);
       if ($returnCode !== 0) {
-        throw new \Exception('Unable to merge .po files for '.$lang.' with msgcat, is it installed?');
+        throw new \Exception('Unable to merge .po files for ' . $lang . ' with msgcat, is it installed?');
       }
 
       /* Compile .po files in .mo files */
-      $command = 'msgfmt -o '.escapeshellarg($langCacheDir.'/fusiondirectory.mo').' '.escapeshellarg($langCacheDir.'/fusiondirectory.po');
+      $command = 'msgfmt -o ' . escapeshellarg($langCacheDir . '/fusiondirectory.mo') . ' ' . escapeshellarg($langCacheDir . '/fusiondirectory.po');
       if ($this->verbose()) {
-        echo '$ '.$command."\n";
+        echo '$ ' . $command . "\n";
       }
       passthru($command, $returnCode);
       if ($returnCode !== 0) {
         throw new \Exception('Unable to compile .mo files with msgfmt, is it installed?');
       }
 
-      if (unlink($langCacheDir.'/fusiondirectory.po') === FALSE) {
-        echo 'Warning: Failed to delete '.$langCacheDir.'/fusiondirectory.po'."\n";
+      if (unlink($langCacheDir . '/fusiondirectory.po') === FALSE) {
+        echo 'Warning: Failed to delete ' . $langCacheDir . '/fusiondirectory.po' . "\n";
       }
     }
   }
