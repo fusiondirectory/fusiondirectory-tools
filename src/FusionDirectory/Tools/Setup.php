@@ -396,7 +396,9 @@ class Setup extends Cli\LdapApplication
                   }
                 }
               }
-              $memberNode->assert();
+              if (!empty($memberNode)) {
+                $memberNode->assert();
+              }
               if ($memberNode->count() === 1) {
                 printf('%s is a valid admin' . "\n", $dn);
                 return;
@@ -412,8 +414,10 @@ class Setup extends Cli\LdapApplication
                 }
               }
 
-              $memberNode->assert();
-              if ($memberNode->count() === 1) {
+              if (!empty($memberNode)) {
+                $memberNode->assert();
+              }
+              if (!empty($memberNode) && $memberNode->count() === 1) {
                 /* Find group members */
                 $memberNode->rewind();
                 $memberEntry  = $memberNode->current();
@@ -463,7 +467,7 @@ class Setup extends Cli\LdapApplication
 
     /* Sort branches by length to have the root one first */
     usort($peopleBranches, function ($a, $b) {
-      return strlen($b) <=> strlen($a);
+      return strlen($a) <=> strlen($b);
     });
 
     $fdAdminUid = $this->askUserInput('Please enter a login for FusionDirectory\'s admin', 'fd-admin');
