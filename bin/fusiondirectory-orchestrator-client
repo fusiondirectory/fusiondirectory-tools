@@ -7,11 +7,11 @@ require "/usr/share/fusiondirectory-orchestrator/config/bootstrap.php";
 class OrchestratorClient
 {
   private bool $verbose, $debug;
-  private string $loginEndPoint, $emailEndPoint, $tasksEndPoint, $lifeCycleEndPoint, $logging, $removeSubTasksEndPoint;
+  private string $loginEndPoint, $emailEndPoint, $tasksEndPoint, $lifeCycleEndPoint, $logging,
+    $removeSubTasksEndPoint, $notificationsEndPoint;
   private string $activateCyclicTasksEndPoint;
   private array $loginData, $listOfArguments;
   private ?string $accessToken;
-
 
   public function __construct ()
   {
@@ -26,13 +26,14 @@ class OrchestratorClient
     $this->logging = '/var/log/orchestrator/orchestrator.log';
 
     $this->listOfArguments = ['--help', '-h', '--verbose', '-v', '--debug', '-d', '--emails', '-m', '--tasks', '-t',
-      '--lifeCycle', '-c', '--remove', '-r', '--log', '-l', '--activateCyclicTasks', '-a'];
+      '--lifeCycle', '-c', '--remove', '-r', '--log', '-l', '--activateCyclicTasks', '-a', '--notifications', '-n'];
 
     $orchestratorFQDN        = $_ENV["ORCHESTRATOR_API_URL"];
     $this->loginEndPoint     = $orchestratorFQDN . '/api/login';
     $this->tasksEndPoint     = $orchestratorFQDN . '/api/tasks/';
     $this->emailEndPoint     = $this->tasksEndPoint . 'mail';
     $this->lifeCycleEndPoint = $this->tasksEndPoint . 'lifeCycle';
+    $this->notificationsEndPoint = $this->tasksEndPoint . 'notifications';
     // Only remove completed sub-tasks
     $this->removeSubTasksEndPoint = $this->tasksEndPoint . 'removeSubTasks';
     // Only activate required cyclic tasks
@@ -86,6 +87,11 @@ class OrchestratorClient
     $this->logToFile(curl_multi_getcontent($ch));
   }
 
+  /**
+   * @param $message
+   * @return void
+   * Note : date will use the local timezone.
+   */
   private function logToFile ($message): void
   {
     file_put_contents($this->logging, date('Y-m-d H:i:s') . ' ' . $message . PHP_EOL,
@@ -163,6 +169,10 @@ class OrchestratorClient
         $ch = curl_init($this->activateCyclicTasksEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
+      case 'notifications':
+        $ch = curl_init($this->notificationsEndPoint);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        break;
     }
 
     //headers for the patch curl method containing the access_token
@@ -230,6 +240,10 @@ class OrchestratorClient
         case '-r':
           $tasksToBeExecuted[] = 'removeSubTasks';
           break;
+        case '--notifications':
+        case '-n':
+          $tasksToBeExecuted[] = 'notifications';
+          break;
         case '--activateCyclicTasks':
         case '-a':
           $tasksToBeExecuted[] = 'activateCyclicTasks';
@@ -269,6 +283,9 @@ class OrchestratorClient
         case 'activateCyclicTasks' :
           $this->subTaskExec('activateCyclicTasks');
           break;
+        case 'notifications' :
+          $this->subTaskExec('notifications');
+          break;
       }
     }
 
@@ -304,6 +321,7 @@ class OrchestratorClient
     --debug (-d)                : Show debug and errors messages." . PHP_EOL . "
     --emails (-m)               : Execute subtasks of type emails." . PHP_EOL . "
     --lifeCycle (-c)            : Execute subtasks of type lifeCycle." . PHP_EOL . "
+    --notifications (-n)        : Execute subtasks of type notifications." . PHP_EOL . "
     --activateCyclicTasks (-a)  : Activate all due cyclic tasks." . PHP_EOL . "
     --remove (-r)               : Remove all completed sub-tasks." . PHP_EOL . "
     --log (-l)                  : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log." . PHP_EOL . "
