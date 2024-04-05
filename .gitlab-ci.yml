@@ -2,6 +2,7 @@ stages:
   - lint
   - codestyle
   - tarballs
+  - trigger
 
 ## Stage lint
 
@@ -49,8 +50,7 @@ create_phpstan_rapport:
 build-tarballs:
   stage: tarballs
   only:
-    variables:
-    - $TARBALLS_TRIGGER_VERSION
+    - dev
   script:
     - mkdir ../fusiondirectory-tools-$VERSION/
     - mv ./* ../fusiondirectory-tools-$VERSION/
@@ -74,3 +74,19 @@ build-release:
   artifacts:
     paths:
       - ./*.tar.gz
+
+trigger-ci-debian-bullseye:
+  stage: trigger
+  only:
+    - dev
+  trigger:
+    project: debian/bullseye-fusiondirectory-tools-dev
+    branch: "main"
+
+trigger-ci-centos-7:
+  stage: trigger
+  only:
+    - dev
+  trigger:
+    project: centos/centos7-fusiondirectory-tools-dev
+    branch: "main"
