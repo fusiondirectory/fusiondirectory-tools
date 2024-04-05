@@ -1,3 +1,13 @@
+## %"FusionDirectory Tools 1.1" - 2024-04-05
+
+### Fixed
+
+#### fusiondirectory-tools
+- fusiondirectory-tools#37 [Tools] Fusiondirectory-plugin-manager - issues when targeting plugin folder
+- fusiondirectory-tools#38 [Tools] Fusiondirectory-plugin-manager - error while removing plugin if folder name differ from plugin name in YAML
+- fusiondirectory-tools#39 [Tools] Fusiondirectory-plugin-manager - removal logic - verification and errors messages
+- fusiondirectory-tools#43 [Tools] Plugin manager - when directory is not "default" it crashes
+
 ## %"FusionDirectory Tools 1.0" - 2023-04-24
 
 ### Added
