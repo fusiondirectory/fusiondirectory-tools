@@ -61,6 +61,20 @@ build-tarballs:
       - fusiondirectory-tools-$VERSION.tar.gz
     expire_in: 30d
 
+build-release:
+  stage: tarballs
+  only:
+    - tags
+  script:
+    - VERSION=$(grep '%' Changelog.md | head -n1 | cut -d ' ' -f4 | tr -d '"')
+    - mkdir ../fusiondirectory-tools-$VERSION/
+    - mv ./* ../fusiondirectory-tools-$VERSION/
+    - mv  ../fusiondirectory-tools-$VERSION/ ./
+    - tar -cvzf fusiondirectory-tools-.tar.gz *
+  artifacts:
+    paths:
+      - ./*.tar.gz
+
 trigger-ci-debian-bullseye:
   stage: trigger
   only:
