@@ -23,7 +23,7 @@ namespace FusionDirectory\Tools;
 
 use FusionDirectory\{Cli, Ldap};
 
-class PluginsManager extends Cli\Application
+class PluginsManager extends Cli\LdapApplication
 {
 
   // Actually calling the VarHandling Trait from CLI libraries.
@@ -67,6 +67,8 @@ class PluginsManager extends Cli\Application
     $this->vars = [
       'fd_home'       => '/usr/share/fusiondirectory',
       'fd_config_dir' => '/etc/fusiondirectory',
+      'config_file'   => 'fusiondirectory.conf',
+      'secrets_file'  => 'fusiondirectory.secrets',
     ];
 
     // Options available during script calling.
@@ -74,7 +76,7 @@ class PluginsManager extends Cli\Application
     // Coming from Trait varHandling, adds set and list vars.
       $this->getVarOptions(),
       // Careful, an option ending by : will receive args passed by user.
-      $this->options = [
+      [
         'register-plugin:'   => [
           'help'    => 'Register plugin within LDAP',
           'command' => 'addPluginRecord',
@@ -96,10 +98,10 @@ class PluginsManager extends Cli\Application
           'command' => 'listPlugins',
         ],
         'debug'              => [
-          'debug' => 'Allows detailed debug output',
+          'help'    => 'Allows detailed debug output',
         ],
-        'help'               => [
-          'help' => 'Show this help',
+        'verbose'            => [
+          'help'    => 'Allows detailed output',
         ],
       ],
       $this->options
@@ -124,8 +126,9 @@ class PluginsManager extends Cli\Application
   {
     // Instantiation of setup to get FD configurations + avoid if already loaded.
     if (!is_object($this->ldap)) {
-      $setup      = new Setup();
-      $this->conf = $setup->loadFusionDirectoryConfigurationFile();
+      $this->configFilePath  = $this->vars['fd_config_dir'] . '/' . $this->vars['config_file'];
+      $this->secretsFilePath = $this->vars['fd_config_dir'] . '/' . $this->vars['secrets_file'];
+      $this->conf = parent::loadFusionDirectoryConfigurationFile();
 
       // If multiple location found
       if (count($this->conf) > 1) {
