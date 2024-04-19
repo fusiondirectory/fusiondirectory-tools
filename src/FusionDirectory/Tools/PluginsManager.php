@@ -451,6 +451,8 @@ class PluginsManager extends Cli\LdapApplication
       $this->copyDirectory($pluginPath->getPathname() . '/addons', $this->vars['fd_home'] . '/plugins/addons');
       $this->copyDirectory($pluginPath->getPathname() . '/admin', $this->vars['fd_home'] . '/plugins/admin');
       $this->copyDirectory($pluginPath->getPathname() . '/config', $this->vars['fd_home'] . '/plugins/config');
+      $this->copyDirectory($pluginPath->getPathname() . '/export', $this->vars['fd_home'] . '/plugins/export');
+      $this->copyDirectory($pluginPath->getPathname() . '/generic', $this->vars['fd_home'] . '/plugins/generic');
       $this->copyDirectory($pluginPath->getPathname() . '/personal', $this->vars['fd_home'] . '/plugins/personal');
       $this->copyDirectory($pluginPath->getPathname() . '/html', $this->vars['fd_home'] . '/html');
       $this->copyDirectory($pluginPath->getPathname() . '/ihtml', $this->vars['fd_home'] . '/ihtml');
