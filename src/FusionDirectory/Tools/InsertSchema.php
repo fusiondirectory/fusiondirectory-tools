@@ -21,25 +21,26 @@
 
 namespace FusionDirectory\Tools;
 
-use \FusionDirectory\Cli;
-use \FusionDirectory\Ldap;
+use FusionDirectory\Cli;
+use FusionDirectory\Ldap;
+use FusionDirectory\Ldap\Exception;
 
 class InsertSchema extends Cli\Application
 {
   /**
    * @var Ldap\Link
    */
-  protected $ldap;
+  protected Ldap\Link $ldap;
 
   /**
    * @var ?string
    */
-  protected $db;
+  protected ?string $db;
 
   /**
    * @var string
    */
-  protected $defaultSchemaDir = '/etc/ldap/schema';
+  protected string $defaultSchemaDir = '/etc/ldap/schema';
 
   public function __construct ()
   {
@@ -105,7 +106,7 @@ class InsertSchema extends Cli\Application
 
   /**
    * @param array<string> $argv
-   * @throws \FusionDirectory\Ldap\Exception
+   * @throws Exception
    * Make the ldap bind a connect securely.
    */
   public function run (array $argv): void
@@ -136,7 +137,7 @@ class InsertSchema extends Cli\Application
   {
     try {
       $list->assertIterationWentFine();
-    } catch (Ldap\Exception $e) {
+    } catch (Exception $e) {
       printf('%sError: %s (%s)'."\n", $indent, $e->getMessage(), $e->getCode());
     }
   }
@@ -145,7 +146,7 @@ class InsertSchema extends Cli\Application
   {
     try {
       return Ldap\GeneralizedTime::fromString($ldapValue)->format('Y-m-d');
-    } catch (Ldap\Exception $e) {
+    } catch (Exception $e) {
       return $ldapValue;
     }
   }
@@ -203,7 +204,7 @@ class InsertSchema extends Cli\Application
   /* Commands */
 
   /**
-   * @throws Ldap\Exception
+   * @throws Exception
    */
   protected function searchForSchemas (string $schemaSearch = NULL): Ldap\Result
   {
@@ -226,7 +227,7 @@ class InsertSchema extends Cli\Application
   {
     try {
       $list = $this->searchForSchemas($schemaSearch);
-    } catch (Ldap\Exception $e) {
+    } catch (Exception $e) {
       echo 'Search for schemas failed: '.$e->getMessage()."\n";
       return;
     }
@@ -306,7 +307,7 @@ class InsertSchema extends Cli\Application
     foreach ($args as $schema) {
       try {
         [$schemaPath, $schemaName, $list] = $this->gatherSchemaInformation($schema);
-      } catch (Ldap\Exception $e) {
+      } catch (Exception $e) {
         echo 'Search for schema failed: '.$e->getMessage()."\n";
         continue;
       }
@@ -334,7 +335,7 @@ class InsertSchema extends Cli\Application
           $result = $this->ldap->mod_del($schemaDn, $attrs);
           $result->assert();
           echo 'Successfuly emptied '.$schemaName."\n";
-        } catch (Ldap\Exception $e) {
+        } catch (Exception $e) {
           printf('Emying schema "%s" failed: %s'."\n", $schemaDn, $e->getMessage());
           continue;
         }
@@ -420,13 +421,14 @@ class InsertSchema extends Cli\Application
 
   /**
    * @param array<string> $args
+   * @throws \Exception
    */
   protected function removeSchema (array $args): void
   {
     foreach ($args as $schema) {
       try {
         [$schemaPath, $schemaName, $list] = $this->gatherSchemaInformation($schema);
-      } catch (Ldap\Exception $e) {
+      } catch (Exception $e) {
         echo 'Search for schema failed: '.$e->getMessage()."\n";
         continue;
       }
@@ -444,7 +446,7 @@ class InsertSchema extends Cli\Application
         $result = $this->ldap->delete($schemaDn);
         $result->assert();
         echo 'Successfuly removed '.$schemaName."\n";
-      } catch (Ldap\Exception $e) {
+      } catch (Exception $e) {
         printf('Removing schema "%s" failed: %s'."\n", $schemaDn, $e->getMessage());
         continue;
       }
@@ -471,7 +473,7 @@ class InsertSchema extends Cli\Application
           'subtree'
         );
         $list->assert();
-      } catch (Ldap\Exception $e) {
+      } catch (Exception $e) {
         printf('Search for Attribute %s failed: %s'."\n", $attribute, $e->getMessage());
         continue;
       }
@@ -501,7 +503,7 @@ class InsertSchema extends Cli\Application
   }
 
   /**
-   * @throws \FusionDirectory\Ldap\Exception
+   * @throws Exception
    */
   function debugInfo (Ldap\Link $ldap): void
   {

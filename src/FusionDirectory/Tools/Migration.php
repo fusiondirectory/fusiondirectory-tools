@@ -21,8 +21,10 @@
 
 namespace FusionDirectory\Tools;
 
-use \FusionDirectory\Ldap;
-use \FusionDirectory\Cli;
+use FusionDirectory\Ldap;
+use FusionDirectory\Cli;
+use FusionDirectory\Ldap\Exception;
+use SodiumException;
 
 /**
  * Tool to migrate data from one FusionDirectory version to the next, if need be
@@ -81,7 +83,7 @@ class Migration extends Cli\LdapApplication
   /**
    * Run the tool
    * @param array<string> $argv
-   * @throws \FusionDirectory\Ldap\Exception
+   * @throws Exception|\Exception
    */
   public function run (array $argv): void
   {
@@ -98,6 +100,7 @@ class Migration extends Cli\LdapApplication
   /**
    * Load locations information from FusionDirectory configuration file
    * @return array<array{tls: bool, uri: string, base: string, bind_dn: string, bind_pwd: string}> locations
+   * @throws SodiumException
    */
   protected function loadFusionDirectoryConfigurationFile (): array
   {
@@ -111,6 +114,7 @@ class Migration extends Cli\LdapApplication
 
   /**
    * Check if there are no duplicated values of $attribute for objects with class objectClass
+   * @throws Exception
    */
   protected function checkIdNumbers (string $objectClass, string $attribute, string $type): void
   {
@@ -120,8 +124,7 @@ class Migration extends Cli\LdapApplication
     $list = $this->ldap->search(
       $this->base,
       "(&(objectClass=$objectClass)($attribute=*))",
-      [$attribute],
-      'subtree'
+      [$attribute]
     );
     $list->assert();
 
@@ -153,6 +156,7 @@ class Migration extends Cli\LdapApplication
   /**
    * Get LDAP attributes which have been deprecated
    * @return array{0: array<int,string>, 1: array<int,string>}
+   * @throws Exception
    */
   protected function getDeprecated (): array
   {
@@ -199,6 +203,8 @@ class Migration extends Cli\LdapApplication
 
   /**
    * List deprecated attributes and classes from schemas
+   * @throws Exception
+   * @throws SodiumException
    */
   protected function cmdListDeprecated (): void
   {
@@ -227,6 +233,7 @@ class Migration extends Cli\LdapApplication
 
   /**
    * Check if there are entries using deprecated attributes or classes in the LDAP tree
+   * @throws Exception
    */
   protected function cmdCheckDeprecated (): void
   {
@@ -281,6 +288,7 @@ class Migration extends Cli\LdapApplication
 
   /**
    * Remove SupAnn root information from FD<1.4
+   * @throws Exception
    */
   protected function cmdRemoveSupannRoot (): void
   {
@@ -305,7 +313,7 @@ class Migration extends Cli\LdapApplication
             $result = $this->ldap->delete($dn);
             $result->assert();
             echo 'Deleted entry "'.$dn.'"'."\n";
-          } catch (Ldap\Exception $e) {
+          } catch (Exception $e) {
             echo 'Failed to delete entry "'.$dn.'": '.$e->getMessage()."\n";
           }
         }
@@ -353,7 +361,7 @@ class Migration extends Cli\LdapApplication
           try {
             $result = $this->ldap->mod_add($dn, ['objectClass' => array_values(array_diff(['person','organizationalPerson','inetOrgPerson'], $entry['objectClass']))]);
             $result->assert();
-          } catch (Ldap\Exception $e) {
+          } catch (Exception $e) {
             echo 'Failed to modify entry "'.$dn.'": '.$e->getMessage()."\n";
           }
         }
@@ -465,6 +473,8 @@ class Migration extends Cli\LdapApplication
 
   /**
    * Print a LDIF file removing attributes which have been deprecated
+   * @throws Exception
+   * @throws SodiumException
    */
   protected function cmdLdifDeprecated (): void
   {

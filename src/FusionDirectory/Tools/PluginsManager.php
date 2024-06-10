@@ -21,60 +21,63 @@
 
 namespace FusionDirectory\Tools;
 
-use FusionDirectory\{Cli, Ldap};
+use FusionDirectory\{Cli, Ldap, Ldap\Exception};
+use FilesystemIterator;
+use PharData;
+use RuntimeException;
+use SodiumException;
+use SplFileInfo;
 
-class PluginsManager extends Cli\Application
+class PluginsManager extends Cli\LdapApplication
 {
 
   // Actually calling the VarHandling Trait from CLI libraries.
   use Cli\VarHandling;
 
   // Definition of variables
-  protected $ldap; //serving to instantiate ldap object.
-  protected $conf; //serving to instantiate setup object and fetch FD configurations details.
+  protected ?Ldap\Link $ldap; //serving to instantiate ldap object.
 
-  private $pluginmanagementmapping = [
-    "cn"                                   => "information:name",
-    "description"                          => "information:description",
-    "fdPluginManagerInfoVersion"           => "information:version",
-    "fdPluginManagerInfoAuthors"           => "information:authors",
-    "fdPluginManagerInfoStatus"            => "information:status",
-    "fdPluginManagerInfoScreenshotUrl"     => "information:screenshotUrl",
-    "fdPluginManagerInfoLogoUrl"           => "information:logoUrl",
-    "fdPluginManagerInfoTags"              => "information:tags",
-    "fdPluginManagerInfoLicence"           => "information:license",
-    "fdPluginManagerInfoOrigin"            => "information:origin",
-    "fdPluginManagerSupportProvider"       => "support:provider",
-    "fdPluginManagerSupportHomeUrl"        => "support:homeUrl",
-    "fdPluginManagerSupportTicketUrl"      => "support:ticketUrl",
-    "fdPluginManagerSupportDiscussionUrl"  => "support:discussionUrl",
-    "fdPluginManagerSupportDownloadUrl"    => "support:downloadUrl",
-    "fdPluginManagerSupportSchemaUrl"      => "support:schemaUrl",
-    "fdPluginManagerSupportContractUrl"    => "support:contractUrl",
-    "fdPluginManagerReqFdVersion"          => "requirement:fdVersion",
-    "fdPluginManagerReqPhpVersion"         => "requirement:phpVersion",
-    "fdPluginManagerReqPlugins"            => "requirement:plugins",
-    "fdPluginManagerContentPhpClass"       => "content:phpClassList",
-    "fdPluginManagerContentLdapObject"     => "content:ldapObjectList",
-    "fdPluginManagerContentLdapAttributes" => "content:ldapAttributeList",
-  ];
+  private array $pluginmanagementmapping
+    = [
+      "cn"                                   => "information:name",
+      "description"                          => "information:description",
+      "fdPluginManagerInfoVersion"           => "information:version",
+      "fdPluginManagerInfoAuthors"           => "information:authors",
+      "fdPluginManagerInfoStatus"            => "information:status",
+      "fdPluginManagerInfoScreenshotUrl"     => "information:screenshotUrl",
+      "fdPluginManagerInfoLogoUrl"           => "information:logoUrl",
+      "fdPluginManagerInfoTags"              => "information:tags",
+      "fdPluginManagerInfoLicence"           => "information:license",
+      "fdPluginManagerInfoOrigin"            => "information:origin",
+      "fdPluginManagerSupportProvider"       => "support:provider",
+      "fdPluginManagerSupportHomeUrl"        => "support:homeUrl",
+      "fdPluginManagerSupportTicketUrl"      => "support:ticketUrl",
+      "fdPluginManagerSupportDiscussionUrl"  => "support:discussionUrl",
+      "fdPluginManagerSupportDownloadUrl"    => "support:downloadUrl",
+      "fdPluginManagerSupportSchemaUrl"      => "support:schemaUrl",
+      "fdPluginManagerSupportContractUrl"    => "support:contractUrl",
+      "fdPluginManagerReqFdVersion"          => "requirement:fdVersion",
+      "fdPluginManagerReqPhpVersion"         => "requirement:phpVersion",
+      "fdPluginManagerReqPlugins"            => "requirement:plugins",
+      "fdPluginManagerContentPhpClass"       => "content:phpClassList",
+      "fdPluginManagerContentLdapObject"     => "content:ldapObjectList",
+      "fdPluginManagerContentLdapAttributes" => "content:ldapAttributeList",
+    ];
+  /**
+   * @var array[]|mixed
+   */
+  private $conf;
 
   public function __construct ()
   {
     parent::__construct();
-
-    // Variables to be set during script calling.
-    $this->vars = [
-      'fd_home'       => '/usr/share/fusiondirectory',
-      'fd_config_dir' => '/etc/fusiondirectory',
-    ];
 
     // Options available during script calling.
     $this->options = array_merge(
     // Coming from Trait varHandling, adds set and list vars.
       $this->getVarOptions(),
       // Careful, an option ending by : will receive args passed by user.
-      $this->options = [
+      [
         'register-plugin:'   => [
           'help'    => 'Register plugin within LDAP',
           'command' => 'addPluginRecord',
@@ -120,12 +123,23 @@ class PluginsManager extends Cli\Application
   }
 
   // Load Setup and Ldap objects and create branch pluginManager if required.
+
+  /**
+   * @throws Exception
+   * @throws SodiumException
+   */
   protected function requirements ()
   {
     // Instantiation of setup to get FD configurations + avoid if already loaded.
     if (!is_object($this->ldap)) {
-      $setup      = new Setup();
-      $this->conf = $setup->loadFusionDirectoryConfigurationFile();
+
+      $this->configFilePath  = $this->vars['fd_config_dir'] . '/' . $this->vars['config_file'];
+      $this->secretsFilePath = $this->vars['fd_config_dir'] . '/' . $this->vars['secrets_file'];
+
+      $this->conf = $this->loadFusionDirectoryConfigurationFile();
+
+      //      $setup      = new Setup();
+      //      $this->conf = $setup->loadFusionDirectoryConfigurationFile();
 
       // If multiple location found
       if (count($this->conf) > 1) {
@@ -152,7 +166,7 @@ class PluginsManager extends Cli\Application
 
         // In case only one location but 'default' name has changed.
       } else if (empty($this->conf['default'])) {
-        $key = array_key_first($this->conf);
+        $key                   = array_key_first($this->conf);
         $this->conf['default'] = $this->conf[$key];
       }
 
@@ -166,6 +180,10 @@ class PluginsManager extends Cli\Application
   }
 
   // Open the yaml file properly if given directly or from source.
+
+  /**
+   * @throws \Exception
+   */
   public function parseYamlFile (array $path): array
   {
     $result = NULL;
@@ -193,6 +211,11 @@ class PluginsManager extends Cli\Application
 
   // function that add plugin record.
   // $params Path to the yaml file to be read.
+  /**
+   * @throws Exception
+   * @throws SodiumException
+   * @throws \Exception
+   */
   public function addPluginRecord (array $path): bool
   {
     $pluginInfo = $this->parseYamlFile($path);
@@ -264,6 +287,7 @@ class PluginsManager extends Cli\Application
 
   /**
    * Create ou=pluginManager LDAP branch
+   * @throws Exception
    */
   protected function createBranchPlugins (): void
   {
@@ -290,6 +314,8 @@ class PluginsManager extends Cli\Application
    * @param bool $reinstall
    * @return void
    * Note : There are possibilities to reinstall the plugin when re-adding it via register function.
+   * @throws Exception
+   * @throws SodiumException
    */
   public function deletePluginRecord (array $dn, bool $reinstall = FALSE)
   {
@@ -315,7 +341,7 @@ class PluginsManager extends Cli\Application
     }
 
     preg_match('/cn=.*,ou.*,dc=/', $dn, $match);
-    if (isset($match[0]) && !empty($match[0])) {
+    if (!empty($match[0])) {
       try {
         $msg = $this->ldap->delete($dn);
         $msg->assert();
@@ -343,6 +369,9 @@ class PluginsManager extends Cli\Application
     }
   }
 
+  /**
+   * @throws \Exception
+   */
   public function installPlugin (array $paths)
   {
     if (count($paths) != 1) {
@@ -388,7 +417,7 @@ class PluginsManager extends Cli\Application
       printf('Extracting plugins into "%s", please wait…' . "\n", $tmpPluginsDir . '/' . $name);
 
       /* Decompress from gz */
-      $p = new \PharData($path);
+      $p = new PharData($path);
       $p->extractTo($tmpPluginsDir);
 
       $dir = $tmpPluginsDir . '/' . $name;
@@ -401,18 +430,18 @@ class PluginsManager extends Cli\Application
     if (is_file($path . '/contrib/yaml/description.yaml')) {
       $lonePlugin = TRUE;
       // Change path as string to an SplFileInfo object
-      $path = new \SplFileInfo($path);
+      $path = new SplFileInfo($path);
 
       // Management of multiple possible plugin in the path received.
     } else {
       echo "Available plugins:\n";
 
-      $Directory = new \FilesystemIterator($dir);
+      $Directory = new FilesystemIterator($dir);
       $i         = 1;
 
       // Show the list of available directory containing possible plugins
       foreach ($Directory as $item) {
-        /** @var \SplFileInfo $item */
+        /** @var SplFileInfo $item */
         if ($item->isDir()) {
           $plugins[$i] = $item;
           printf("%d: %s\n", $i, $item->getBasename());
@@ -445,7 +474,12 @@ class PluginsManager extends Cli\Application
 
   }
 
-  public function copyPluginFiles (\SplFileInfo $pluginPath): void
+  /**
+   * @throws Exception
+   * @throws SodiumException
+   * @throws \Exception
+   */
+  public function copyPluginFiles (SplFileInfo $pluginPath): void
   {
     // Register the plugins within LDAP
     $this->addPluginRecord([$pluginPath]);
@@ -469,6 +503,11 @@ class PluginsManager extends Cli\Application
     echo 'Please refresh FusionDirectory with fusiondirectory-configuration-manager --update-cache' . PHP_EOL;
   }
 
+  /**
+   * @throws Exception
+   * @throws SodiumException
+   * @throws \Exception
+   */
   public function removePlugin (array $info)
   {
     $this->requirements();
@@ -488,26 +527,16 @@ class PluginsManager extends Cli\Application
           $final_path = implode('/', $dirs);
 
           switch ($dirs[0]) {
+            case 'config':
+            case 'personal':
+            case 'admin':
+            case 'include':
             case 'addons':
               $this->removeFile($this->vars['fd_home'] . '/plugins/' . $final_path);
               break;
-            case 'config':
-              $this->removeFile($this->vars['fd_home'] . '/plugins/' . $final_path);
-              break;
-            case 'personal':
-              $this->removeFile($this->vars['fd_home'] . '/plugins/' . $final_path);
-              break;
-            case 'admin':
-              $this->removeFile($this->vars['fd_home'] . '/plugins/' . $final_path);
-              break;
+            case 'ihtml':
             case 'html':
               $this->removeFile($this->vars['fd_home'] . '/' . $final_path);
-              break;
-            case 'ihtml':
-              $this->removeFile($this->vars['fd_home'] . '/' . $final_path);
-              break;
-            case 'include':
-              $this->removeFile($this->vars['fd_home'] . '/plugins/' . $final_path);
               break;
             case 'contrib':
               if ($dirs[1] == 'openldap') {
@@ -529,6 +558,10 @@ class PluginsManager extends Cli\Application
   }
 
   // Simply remove files provided in args
+
+  /**
+   * @throws \Exception
+   */
   public function removeFile (string $file): void
   {
     if (!file_exists($file)) {
@@ -540,13 +573,17 @@ class PluginsManager extends Cli\Application
       }
     } else {
       if (!unlink($file)) {
-        throw new \RuntimeException("Failed to unlink {$file}: " . var_export(error_get_last(), TRUE));
+        throw new RuntimeException("Failed to unlink $file: " . var_export(error_get_last(), TRUE));
       } else {
-        echo "unlink: {$file}" . PHP_EOL;
+        echo "unlink: $file" . PHP_EOL;
       }
     }
   }
 
+  /**
+   * @throws Exception
+   * @throws SodiumException
+   */
   public function listPlugins ()
   {
     $this->requirements();
@@ -575,6 +612,9 @@ class PluginsManager extends Cli\Application
     }
   }
 
+  /**
+   * @throws \Exception
+   */
   public function copyDirectory (string $source, string $dest): void
   {
     if (file_exists($source)) {
@@ -589,7 +629,7 @@ class PluginsManager extends Cli\Application
         }
       }
 
-      $Directory = new \FilesystemIterator($source);
+      $Directory = new FilesystemIterator($source);
 
       foreach ($Directory as $file) {
         if ($file->isDir()) {
