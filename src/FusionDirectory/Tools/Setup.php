@@ -36,7 +36,7 @@ class Setup extends Cli\LdapApplication
 {
 
   // Actually calling the VarHandling Trait from CLI libraries.
-  use Cli\VarHandling;
+  //use Cli\VarHandling;
 
   protected const CONFIGRDN = 'cn=config,ou=fusiondirectory';
 

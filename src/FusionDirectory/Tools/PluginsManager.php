@@ -30,13 +30,6 @@ use SplFileInfo;
 
 class PluginsManager extends Cli\LdapApplication
 {
-
-  // Actually calling the VarHandling Trait from CLI libraries.
-  use Cli\VarHandling;
-
-  // Definition of variables
-  protected ?Ldap\Link $ldap; //serving to instantiate ldap object.
-
   private array $pluginmanagementmapping
     = [
       "cn"                                   => "information:name",
@@ -99,10 +92,10 @@ class PluginsManager extends Cli\LdapApplication
           'command' => 'listPlugins',
         ],
         'debug'              => [
-          'debug' => 'Allows detailed debug output',
+          'help' => 'Allows detailed debug output',
         ],
-        'help'               => [
-          'help' => 'Show this help',
+        'verbose'               => [
+          'help' => 'Allows detailed output',
         ],
       ],
       $this->options

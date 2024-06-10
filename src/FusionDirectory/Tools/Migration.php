@@ -31,7 +31,7 @@ use SodiumException;
  */
 class Migration extends Cli\LdapApplication
 {
-  use Cli\VarHandling;
+  //use Cli\VarHandling;
 
   public function __construct ()
   {
