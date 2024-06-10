@@ -218,7 +218,7 @@ class PluginsManager extends Cli\Application
     // Verifying if the record of the plugin already exists and delete it.
     if ($this->branchExist($pluginDN)) {
       echo 'Branch : ' . $pluginDN . ' already exists, re-installing...' . PHP_EOL;
-      $this->deletePluginRecord([$pluginDN]);
+      $this->deletePluginRecord([$pluginDN], TRUE);
     }
 
     // Collect and arrange the info received by the yaml file.
@@ -285,8 +285,13 @@ class PluginsManager extends Cli\Application
     }
   }
 
-  // Method which either receive the full DN or the name of the plugin.
-  public function deletePluginRecord (array $dn)
+  /**
+   * @param array $dn
+   * @param bool $reinstall
+   * @return void
+   * Note : There are possibilities to reinstall the plugin when re-adding it via register function.
+   */
+  public function deletePluginRecord (array $dn, bool $reinstall = FALSE)
   {
     $this->requirements();
     $dn = $dn[0];
@@ -298,7 +303,12 @@ class PluginsManager extends Cli\Application
     }
 
     // Verification if the plugin exists in LDAP
-    $pluginDN = "cn=" . $dn . ",ou=pluginManager," . $this->conf['default']['base'];
+    if ($reinstall) {
+      $pluginDN = $dn;
+    } else {
+      $pluginDN = "cn=" . $dn . ",ou=pluginManager," . $this->conf['default']['base'];
+    }
+
     if (!$this->branchExist($pluginDN)) {
       echo 'The plugin is name is either wrong or the plugin specified is not installed.' . PHP_EOL;
       exit;
