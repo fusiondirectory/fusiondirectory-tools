@@ -94,7 +94,7 @@ class PluginsManager extends Cli\LdapApplication
         'debug'              => [
           'help' => 'Allows detailed debug output',
         ],
-        'verbose'               => [
+        'verbose'            => [
           'help' => 'Allows detailed output',
         ],
       ],
@@ -177,16 +177,16 @@ class PluginsManager extends Cli\LdapApplication
   /**
    * @throws \Exception
    */
-  public function parseYamlFile (array $path): array
+  public function parseYamlFile (string $path): array
   {
     $result = NULL;
     // verify if the yaml file is provided directly - case for packaged plugins.
-    if (is_file($path[0])) {
-      $result = preg_match('/description.yaml/', $path[0]);
+    if (is_file($path)) {
+      $result = preg_match('/description.yaml/', $path);
       // verify if the archive (non packaged) contains the proper yaml.
-    } elseif (!file_exists($path[0] . "/contrib/yaml/description.yaml")) {
+    } elseif (!file_exists($path . "/contrib/yaml/description.yaml")) {
       if ($this->getopt['debug']) {
-        throw new \Exception($path[0] . "/contrib/yaml/description.yaml does not exist");
+        throw new \Exception($path . "/contrib/yaml/description.yaml does not exist");
       } else {
         echo "The description.yaml file could not be found" . PHP_EOL;
         exit;
@@ -194,9 +194,9 @@ class PluginsManager extends Cli\LdapApplication
     }
     // Load the proper yaml if provide directly (packaged) of from source.
     if ($result === 1) {
-      $pluginInfo = yaml_parse_file($path[0]);
+      $pluginInfo = yaml_parse_file($path);
     } else {
-      $pluginInfo = yaml_parse_file($path[0] . '/contrib/yaml/description.yaml');
+      $pluginInfo = yaml_parse_file($path . '/contrib/yaml/description.yaml');
     }
 
     return $pluginInfo;
@@ -209,7 +209,7 @@ class PluginsManager extends Cli\LdapApplication
    * @throws SodiumException
    * @throws \Exception
    */
-  public function addPluginRecord (array $path): bool
+  public function addPluginRecord (string $path): bool
   {
     $pluginInfo = $this->parseYamlFile($path);
 
@@ -234,7 +234,7 @@ class PluginsManager extends Cli\LdapApplication
     // Verifying if the record of the plugin already exists and delete it.
     if ($this->branchExist($pluginDN)) {
       echo 'Branch : ' . $pluginDN . ' already exists, re-installing...' . PHP_EOL;
-      $this->deletePluginRecord([$pluginDN], TRUE);
+      $this->deletePluginRecord($pluginDN, TRUE);
     }
 
     // Collect and arrange the info received by the yaml file.
@@ -310,22 +310,21 @@ class PluginsManager extends Cli\LdapApplication
    * @throws Exception
    * @throws SodiumException
    */
-  public function deletePluginRecord (array $dn, bool $reinstall = FALSE)
+  public function deletePluginRecord (string $pluginName, bool $reinstall = FALSE)
   {
     $this->requirements();
-    $dn = $dn[0];
 
     // Verification if the DN passed is not a dir or a file.
-    if (file_exists($dn)) {
+    if (file_exists($pluginName)) {
       echo "Error! You must pass the name of the plugin as argument. Not a file or directory." . PHP_EOL;
       exit;
     }
 
     // Verification if the plugin exists in LDAP
     if ($reinstall) {
-      $pluginDN = $dn;
+      $pluginDN = $pluginName;
     } else {
-      $pluginDN = "cn=" . $dn . ",ou=pluginManager," . $this->conf['default']['base'];
+      $pluginDN = "cn=" . $pluginName . ",ou=pluginManager," . $this->conf['default']['base'];
     }
 
     if (!$this->branchExist($pluginDN)) {
@@ -333,50 +332,50 @@ class PluginsManager extends Cli\LdapApplication
       exit;
     }
 
-    preg_match('/cn=.*,ou.*,dc=/', $dn, $match);
+    preg_match('/cn=.*,ou.*,dc=/', $pluginName, $match);
     if (!empty($match[0])) {
       try {
-        $msg = $this->ldap->delete($dn);
+        $msg = $this->ldap->delete($pluginName);
         $msg->assert();
       } catch (Ldap\Exception $e) {
-        printf('Error while deleting branch : %s !' . "\n", $dn);
+        printf('Error while deleting branch : %s !' . "\n", $pluginName);
         if ($this->getopt['debug']) {
           throw $e;
         }
         exit;
 
       }
-      printf('Deleted %s from LDAP successfully.' . "\n", $dn);
+      printf('Deleted %s from LDAP successfully.' . "\n", $pluginName);
     } else {
       try {
         $msg = $this->ldap->delete($pluginDN);
         $msg->assert();
       } catch (Ldap\Exception $e) {
-        printf('Error while deleting branch : %s !' . "\n", $dn);
+        printf('Error while deleting branch : %s !' . "\n", $pluginName);
         if ($this->getopt['debug']) {
           throw $e;
         }
         exit;
       }
-      printf('%s plugin has been successfully unregistered.' . "\n", $dn);
+      printf('%s plugin has been successfully unregistered.' . "\n", $pluginName);
     }
   }
 
   /**
    * @throws \Exception
    */
-  public function installPlugin (array $paths)
+  public function installPlugin (string $path)
   {
-    if (count($paths) != 1) {
-      if ($this->getopt['debug']) {
-        throw new \Exception('Please provide one and only one path to fetch plugins from');
-      } else {
-        echo "Please provide one and only one path to fetch plugins from'" . PHP_EOL;
-        exit;
-      }
-    }
+    //    if (count($path) != 1) {
+    //      if ($this->getopt['debug']) {
+    //        throw new \Exception('Please provide one and only one path to fetch plugins from');
+    //      } else {
+    //        echo "Please provide one and only one path to fetch plugins from'" . PHP_EOL;
+    //        exit;
+    //      }
+    //    }
 
-    $path = $paths[0];
+    //    $path = $path[0];
     if (!file_exists($path)) {
       if ($this->getopt['debug']) {
         throw new \Exception($path . ' does not exist');
@@ -458,7 +457,7 @@ class PluginsManager extends Cli\LdapApplication
       foreach ($plugins as $i => $pluginPath) {
         if (!empty($pluginsToInstall)) {
           if (in_array('all', $pluginsToInstall) || in_array($pluginPath->getBasename(), $pluginsToInstall) || in_array($i, $pluginsToInstall)) {
-            echo 'Installing plugin contained within directory :' . $pluginPath->getBasename() . '.' . "\n";
+            echo 'Installing plugin contained within directory : ' . $pluginPath->getBasename() . '.' . "\n";
             $this->copyPluginFiles($pluginPath);
           }
         }
@@ -475,8 +474,8 @@ class PluginsManager extends Cli\LdapApplication
   public function copyPluginFiles (SplFileInfo $pluginPath): void
   {
     // Register the plugins within LDAP
-    $this->addPluginRecord([$pluginPath]);
-    $pluginInfo = $this->parseYamlFile([$pluginPath]);
+    $this->addPluginRecord($pluginPath);
+    $pluginInfo = $this->parseYamlFile($pluginPath);
 
     // If package do not install
     if ($pluginInfo['information']['origin'] !== 'package') {
@@ -501,52 +500,51 @@ class PluginsManager extends Cli\LdapApplication
    * @throws SodiumException
    * @throws \Exception
    */
-  public function removePlugin (array $info)
+  public function removePlugin (string $pluginName)
   {
     $this->requirements();
+    $this->deletePluginRecord($pluginName);
 
-    foreach ($info as $pluginName) {
+    $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
 
-      $this->deletePluginRecord([$pluginName]);
-      $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
-      // if origin = package, do not remove files.
-      if ($pluginInfo['information']['origin'] !== 'package') {
-        foreach ($pluginInfo['content']['fileList'] as $file) {
-          // Get the first dir from the path
-          $dirs = explode('/', $file);
-          // remove the './' unrequired provided from $file
-          array_shift($dirs);
-          // Get the finale path required to delete the file with the './' removed.
-          $final_path = implode('/', $dirs);
+    // if origin = package, do not remove files.
+    if ($pluginInfo['information']['origin'] !== 'package') {
+      foreach ($pluginInfo['content']['fileList'] as $file) {
 
-          switch ($dirs[0]) {
-            case 'config':
-            case 'personal':
-            case 'admin':
-            case 'include':
-            case 'addons':
-              $this->removeFile($this->vars['fd_home'] . '/plugins/' . $final_path);
-              break;
-            case 'ihtml':
-            case 'html':
+        // Get the first dir from the path
+        $dirs = explode('/', $file);
+        // remove the './' unrequired provided from $file
+        array_shift($dirs);
+        // Get the finale path required to delete the file with the './' removed.
+        $final_path = implode('/', $dirs);
+
+        switch ($dirs[0]) {
+          case 'config':
+          case 'personal':
+          case 'admin':
+          case 'include':
+          case 'addons':
+            $this->removeFile($this->vars['fd_home'] . '/plugins/' . $final_path);
+            break;
+          case 'ihtml':
+          case 'html':
+            $this->removeFile($this->vars['fd_home'] . '/' . $final_path);
+            break;
+          case 'contrib':
+            if ($dirs[1] == 'openldap') {
               $this->removeFile($this->vars['fd_home'] . '/' . $final_path);
-              break;
-            case 'contrib':
-              if ($dirs[1] == 'openldap') {
-                $this->removeFile($this->vars['fd_home'] . '/' . $final_path);
-              }
-              if ($dirs[1] == 'etc') {
-                $this->removeFile($this->vars['fd_config_dir'] . '/' . basename(dirname($final_path)) . '/' . basename($final_path));
-              }
-              break;
-            case 'locale':
-              $this->removeFile($this->vars['fd_home'] . '/locale/plugins/' . $pluginName . '/locale/' . basename(dirname($final_path)) . '/' . basename($final_path));
-              break;
-          }
+            }
+            if ($dirs[1] == 'etc') {
+              $this->removeFile($this->vars['fd_config_dir'] . '/' . basename(dirname($final_path)) . '/' . basename($final_path));
+            }
+            break;
+          case 'locale':
+            $this->removeFile($this->vars['fd_home'] . '/locale/plugins/' . $pluginName . '/locale/' . basename(dirname($final_path)) . '/' . basename($final_path));
+            break;
         }
-        // Finally delete the yaml file of the plugin.
-        $this->removeFile($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
       }
+      // Finally delete the yaml file of the plugin.
+      $this->removeFile($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
     }
   }
 
