@@ -28,6 +28,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RegexIterator;
 use SodiumException;
+use SplFileObject;
 
 /**
  * fusiondirectory-setup tool, which provides useful commands to inspect or fix LDAP data and FusionDirectory installation
@@ -48,22 +49,6 @@ class Setup extends Cli\LdapApplication
 
   public function __construct ()
   {
-    $this->vars = [
-      'fd_home'          => '/usr/share/fusiondirectory',
-      'fd_cache'         => '/var/cache/fusiondirectory',
-      'fd_config_dir'    => '/etc/fusiondirectory',
-      'fd_smarty_path'   => '/usr/share/php/smarty3/Smarty.class.php',
-      'fd_spool_dir'     => '/var/spool/fusiondirectory',
-      'config_file'      => 'fusiondirectory.conf',
-      'secrets_file'     => 'fusiondirectory.secrets',
-      'locale_dir'       => 'locale',
-      'class_cache'      => 'class.cache',
-      'locale_cache_dir' => 'locale',
-      'tmp_dir'          => 'tmp',
-      'fai_log_dir'      => 'fai',
-      'template_dir'     => 'template'
-    ];
-
     parent::__construct();
 
     $this->options = array_merge(
@@ -954,7 +939,7 @@ EOF;
     if ($this->verbose()) {
       printf('Updating %s' . "\n", $this->vars['fd_cache'] . '/' . $this->vars['class_cache']);
     }
-    $file = new \SplFileObject($this->vars['fd_cache'] . '/' . $this->vars['class_cache'], 'w');
+    $file = new SplFileObject($this->vars['fd_cache'] . '/' . $this->vars['class_cache'], 'w');
 
     $file->fwrite("<?php\n\$class_mapping = ");
     $file->fwrite(var_export($classes, TRUE));
@@ -978,7 +963,7 @@ EOF;
     echo "* Generating random master key\n";
     $masterKey = Cli\SecretBox::generateSecretKey();
     echo "* Creating \"$fdSecretsFile\"\n";
-    $secretsFile = new \SplFileObject($fdSecretsFile, 'w');
+    $secretsFile = new SplFileObject($fdSecretsFile, 'w');
     $secretsFile->fwrite('RequestHeader set FDKEY ' . base64_encode($masterKey) . "\n");
     $this->setFileRights($fdSecretsFile, 0600, 'root', 'root');
 
