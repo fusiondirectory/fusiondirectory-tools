@@ -159,7 +159,6 @@ class Setup extends Cli\LdapApplication
    */
   protected function getApacheGroup (): string
   {
-
     /* try to identify the running distribution, if detection fails, ask for user input */
     if (file_exists('/etc/debian_version')) {
       $apacheGroup = 'www-data';

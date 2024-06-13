@@ -342,8 +342,7 @@ class InsertSchema extends Cli\Application
    * @return array{string, string, Ldap\Result}
    * @throws \Exception
    */
-  protected
-  function gatherSchemaInformation (string $path): array
+  protected function gatherSchemaInformation (string $path): array
   {
     if (!is_file($path)) {
       $path = $this->defaultSchemaDir . '/' . $path;
@@ -370,8 +369,7 @@ class InsertSchema extends Cli\Application
   /**
    * @param array<string> $args
    */
-  protected
-  function insertSchema (string $arg): void
+  protected function insertSchema (string $arg): void
   {
     try {
       [$schemaPath, $schemaName, $list] = $this->gatherSchemaInformation($arg);
@@ -393,8 +391,7 @@ class InsertSchema extends Cli\Application
    * @param string $arg
    * @return void
    */
-  protected
-  function replaceSchema (string $arg): void
+  protected function replaceSchema (string $arg): void
   {
     try {
       [$schemaPath, $schemaName, $list] = $this->gatherSchemaInformation($arg);
@@ -418,8 +415,7 @@ class InsertSchema extends Cli\Application
    * @param array<string> $args
    * @throws \Exception
    */
-  protected
-  function removeSchema (string $arg): void
+  protected function removeSchema (string $arg): void
   {
     try {
       [$schemaPath, $schemaName, $list] = $this->gatherSchemaInformation($arg);
@@ -448,8 +444,7 @@ class InsertSchema extends Cli\Application
    * @param array $attribute
    * @return void
    */
-  protected
-  function showAttribute (string $attribute): void
+  protected function showAttribute (string $attribute): void
   {
     try {
       $list = $this->ldap->search(

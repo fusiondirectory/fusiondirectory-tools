@@ -131,9 +131,6 @@ class PluginsManager extends Cli\LdapApplication
 
       $this->conf = $this->loadFusionDirectoryConfigurationFile();
 
-      //      $setup      = new Setup();
-      //      $this->conf = $setup->loadFusionDirectoryConfigurationFile();
-
       // If multiple location found
       if (count($this->conf) > 1) {
         // Only printout the name of the array (key) representing the name of the location set in FD configuration
@@ -366,16 +363,6 @@ class PluginsManager extends Cli\LdapApplication
    */
   public function installPlugin (string $path)
   {
-    //    if (count($path) != 1) {
-    //      if ($this->getopt['debug']) {
-    //        throw new \Exception('Please provide one and only one path to fetch plugins from');
-    //      } else {
-    //        echo "Please provide one and only one path to fetch plugins from'" . PHP_EOL;
-    //        exit;
-    //      }
-    //    }
-
-    //    $path = $path[0];
     if (!file_exists($path)) {
       if ($this->getopt['debug']) {
         throw new \Exception($path . ' does not exist');
