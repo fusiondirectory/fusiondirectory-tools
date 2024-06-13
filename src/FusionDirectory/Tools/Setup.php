@@ -818,28 +818,30 @@ EOF;
     }
   }
 
+
   /**
+   * @param string $vars
+   * @return void
+   * @throws Exception
+   * @throws SodiumException
    * Set value for a FusionDirectory configuration variable in the LDAP
-   * @param array<string> $vars
    */
-  protected function cmdSetConfigVar (array $vars): void
+  protected function cmdSetConfigVar (string $var): void
   {
     $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
 
-    foreach ($vars as $var) {
-      if (preg_match('/^([^=]+)=(.+)$/', $var, $m)) {
-        [$var, $value] = [(string)$m[1], (string)$m[2]];
-        if (!(preg_match('/^fd/', $var))) {
-          $var = 'fd' . $var;
-        }
-
-        printf('Setting configuration var %s to "%s"' . "\n", $var, $value);
-
-        $result = $this->ldap->mod_replace(static::CONFIGRDN . ',' . $this->base, [$var => $value]);
-        $result->assert();
-      } else {
-        throw new \Exception('Incorrect syntax for --set-config: "' . $var . '". Use var=value');
+    if (preg_match('/^([^=]+)=(.+)$/', $var, $m)) {
+      [$var, $value] = [(string)$m[1], (string)$m[2]];
+      if (!(preg_match('/^fd/', $var))) {
+        $var = 'fd' . $var;
       }
+
+      printf('Setting configuration var %s to "%s"' . "\n", $var, $value);
+
+      $result = $this->ldap->mod_replace(static::CONFIGRDN . ',' . $this->base, [$var => $value]);
+      $result->assert();
+    } else {
+      throw new \Exception('Incorrect syntax for --set-config: "' . $var . '". Use var=value');
     }
   }
 

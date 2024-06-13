@@ -31,17 +31,8 @@ use SodiumException;
  */
 class Migration extends Cli\LdapApplication
 {
-  //use Cli\VarHandling;
-
   public function __construct ()
   {
-    $this->vars = [
-      'fd_home'           => '/usr/share/fusiondirectory',
-      'fd_config_dir'     => '/etc/fusiondirectory',
-      'config_file'       => 'fusiondirectory.conf',
-      'secrets_file'      => 'fusiondirectory.secrets',
-    ];
-
     parent::__construct();
 
     $this->options  = array_merge(
