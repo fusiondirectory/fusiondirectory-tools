@@ -21,8 +21,14 @@
 
 namespace FusionDirectory\Tools;
 
-use \FusionDirectory\Ldap;
-use \FusionDirectory\Cli;
+use FilesystemIterator;
+use FusionDirectory\Cli;
+use FusionDirectory\Ldap\Exception;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RegexIterator;
+use SodiumException;
+use SplFileObject;
 
 /**
  * fusiondirectory-setup tool, which provides useful commands to inspect or fix LDAP data and FusionDirectory installation
@@ -31,7 +37,7 @@ class Setup extends Cli\LdapApplication
 {
 
   // Actually calling the VarHandling Trait from CLI libraries.
-  use Cli\VarHandling;
+  //use Cli\VarHandling;
 
   protected const CONFIGRDN = 'cn=config,ou=fusiondirectory';
 
@@ -43,22 +49,6 @@ class Setup extends Cli\LdapApplication
 
   public function __construct ()
   {
-    $this->vars = [
-      'fd_home'          => '/usr/share/fusiondirectory',
-      'fd_cache'         => '/var/cache/fusiondirectory',
-      'fd_config_dir'    => '/etc/fusiondirectory',
-      'fd_smarty_path'   => '/usr/share/php/smarty3/Smarty.class.php',
-      'fd_spool_dir'     => '/var/spool/fusiondirectory',
-      'config_file'      => 'fusiondirectory.conf',
-      'secrets_file'     => 'fusiondirectory.secrets',
-      'locale_dir'       => 'locale',
-      'class_cache'      => 'class.cache',
-      'locale_cache_dir' => 'locale',
-      'tmp_dir'          => 'tmp',
-      'fai_log_dir'      => 'fai',
-      'template_dir'     => 'template'
-    ];
-
     parent::__construct();
 
     $this->options = array_merge(
@@ -118,14 +108,14 @@ class Setup extends Cli\LdapApplication
   /**
    * Run the tool
    * @param array<string> $argv
-   * @throws \FusionDirectory\Ldap\Exception
+   * @throws Exception|\Exception
    */
   public function run (array $argv): void
   {
     parent::run($argv);
 
     if (isset($this->getopt['set-var']) && !empty($this->getopt['set-var'])) {
-      $this->cmdSetVar($this->getopt['set-var'] ?? []);
+      $this->cmdSetVar($this->getopt['set-var']);
       unset($this->getopt['set-var']);
     }
 
@@ -152,6 +142,7 @@ class Setup extends Cli\LdapApplication
   /**
    * Load locations information from FusionDirectory configuration file
    * @return array<array{tls: bool, uri: string, base: string, bind_dn: string, bind_pwd: string}> locations
+   * @throws SodiumException
    */
   public function loadFusionDirectoryConfigurationFile (): array
   {
@@ -168,8 +159,6 @@ class Setup extends Cli\LdapApplication
    */
   protected function getApacheGroup (): string
   {
-    $apacheGroup = '';
-
     /* try to identify the running distribution, if detection fails, ask for user input */
     if (file_exists('/etc/debian_version')) {
       $apacheGroup = 'www-data';
@@ -192,6 +181,7 @@ class Setup extends Cli\LdapApplication
 
   /**
    * Check the rights of a directory or file, create missing directory if needed
+   * @throws \Exception
    */
   protected function checkRights (string $dir, string $user, string $group, int $rights, bool $create): bool
   {
@@ -278,6 +268,9 @@ class Setup extends Cli\LdapApplication
    * Read FusionDirectory configuration in LDAP and return it
    * @param array<int,string> $attrs
    * @return array{0: string, 1: array<string,array<int,string>>}
+   * @throws Exception
+   * @throws SodiumException
+   * @throws \Exception
    */
   protected function readLdapConfiguration (array $attrs = ['*']): array
   {
@@ -303,6 +296,7 @@ class Setup extends Cli\LdapApplication
 
   /**
    * Check that an LDAP branch exists
+   * @throws Exception
    */
   public function branchExists (string $dn): bool
   {
@@ -313,7 +307,7 @@ class Setup extends Cli\LdapApplication
         return FALSE;
       }
       $branchList->assert();
-    } catch (Ldap\Exception $e) {
+    } catch (Exception $e) {
       if ($e->getCode() === 32) {
         if ($this->verbose()) {
           printf('Branch %s does not exists' . "\n", $dn);
@@ -329,6 +323,8 @@ class Setup extends Cli\LdapApplication
   /**
    * Create an LDAP branch
    * @param string $ou branch in the form ou=name
+   * @throws Exception
+   * @throws \Exception
    */
   protected function createBranch (string $ou): void
   {
@@ -353,6 +349,8 @@ class Setup extends Cli\LdapApplication
    * Propose to add it if it is missing.
    * @param array<string,array<string>> $config
    * @param array<int,string> $peopleBranches
+   * @throws Exception
+   * @throws \Exception
    */
   protected function checkAdmin (array $config, array $peopleBranches): void
   {
@@ -389,7 +387,7 @@ class Setup extends Cli\LdapApplication
               $dn = base64_decode($member);
               try {
                 $memberNode = $this->ldap->search($dn, '(objectClass=inetOrgPerson)', [], 'base');
-              } catch (Ldap\Exception $e) {
+              } catch (Exception $e) {
                 if ($e->getCode() === 32) {
                   if ($this->verbose()) {
                     printf('%s does not exists' . "\n", $dn);
@@ -406,7 +404,7 @@ class Setup extends Cli\LdapApplication
               /* Is this a group? */
               try {
                 $memberNode = $this->ldap->search($dn, '(objectClass=posixGroup)', ['memberUid'], 'base');
-              } catch (Ldap\Exception $e) {
+              } catch (Exception $e) {
                 if ($e->getCode() === 32) {
                   if ($this->verbose()) {
                     printf('%s does not exists' . "\n", $dn);
@@ -573,6 +571,7 @@ class Setup extends Cli\LdapApplication
 
   /**
    * Insert a new role object in the LDAP
+   * @throws Exception
    */
   protected function createRole (string $cn, string $acl, string $aclrolerdn): string
   {
@@ -602,11 +601,11 @@ class Setup extends Cli\LdapApplication
   protected function getClassesList (string $path): array
   {
     /* Recursive iterator on the directory */
-    $Directory = new \RecursiveDirectoryIterator($path, \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_PATHNAME);
+    $Directory = new RecursiveDirectoryIterator($path, FilesystemIterator::KEY_AS_PATHNAME | FilesystemIterator::CURRENT_AS_PATHNAME);
     /* Flatten the iterator to iterate directly on all files in the tree */
-    $Iterator = new \RecursiveIteratorIterator($Directory);
+    $Iterator = new RecursiveIteratorIterator($Directory);
     /* Filter by regex */
-    $Regex = new \RegexIterator($Iterator, '/^.+\.inc$/i');
+    $Regex = new RegexIterator($Iterator, '/^.+\.inc$/i');
 
     $classes = [];
     foreach ($Regex as $filepath) {
@@ -629,6 +628,7 @@ class Setup extends Cli\LdapApplication
 
   /**
    * Set file permissions and ownership information
+   * @throws \Exception
    */
   protected function setFileRights (string $path, int $rights, string $user, string $group): void
   {
@@ -650,6 +650,7 @@ class Setup extends Cli\LdapApplication
 
   /**
    * Write vars into variables.inc file for FusionDirectory
+   * @throws \Exception
    */
   protected function cmdWriteVars (): void
   {
@@ -730,6 +731,7 @@ EOF;
 
   /**
    * Show FusionDirectory version string
+   * @throws \Exception
    */
   protected function cmdShowVersion (): void
   {
@@ -756,6 +758,7 @@ EOF;
 
   /**
    * Check FusionDirectory configuration file permissions and ownership
+   * @throws \Exception
    */
   protected function cmdCheckConfigFile (): void
   {
@@ -813,33 +816,36 @@ EOF;
     }
   }
 
+
   /**
+   * @param string $var
+   * @return void
+   * @throws Exception
+   * @throws SodiumException
    * Set value for a FusionDirectory configuration variable in the LDAP
-   * @param array<string> $vars
    */
-  protected function cmdSetConfigVar (array $vars): void
+  protected function cmdSetConfigVar (string $var): void
   {
     $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
 
-    foreach ($vars as $var) {
-      if (preg_match('/^([^=]+)=(.+)$/', $var, $m)) {
-        [$var, $value] = [(string)$m[1], (string)$m[2]];
-        if (!(preg_match('/^fd/', $var))) {
-          $var = 'fd' . $var;
-        }
-
-        printf('Setting configuration var %s to "%s"' . "\n", $var, $value);
-
-        $result = $this->ldap->mod_replace(static::CONFIGRDN . ',' . $this->base, [$var => $value]);
-        $result->assert();
-      } else {
-        throw new \Exception('Incorrect syntax for --set-config: "' . $var . '". Use var=value');
+    if (preg_match('/^([^=]+)=(.+)$/', $var, $m)) {
+      [$var, $value] = [(string)$m[1], (string)$m[2]];
+      if (!(preg_match('/^fd/', $var))) {
+        $var = 'fd' . $var;
       }
+
+      printf('Setting configuration var %s to "%s"' . "\n", $var, $value);
+
+      $result = $this->ldap->mod_replace(static::CONFIGRDN . ',' . $this->base, [$var => $value]);
+      $result->assert();
+    } else {
+      throw new \Exception('Incorrect syntax for --set-config: "' . $var . '". Use var=value');
     }
   }
 
   /**
    * Check LDAP tree content
+   * @throws Exception
    */
   protected function cmdCheckLdap (): void
   {
@@ -933,7 +939,7 @@ EOF;
     if ($this->verbose()) {
       printf('Updating %s' . "\n", $this->vars['fd_cache'] . '/' . $this->vars['class_cache']);
     }
-    $file = new \SplFileObject($this->vars['fd_cache'] . '/' . $this->vars['class_cache'], 'w');
+    $file = new SplFileObject($this->vars['fd_cache'] . '/' . $this->vars['class_cache'], 'w');
 
     $file->fwrite("<?php\n\$class_mapping = ");
     $file->fwrite(var_export($classes, TRUE));
@@ -957,7 +963,7 @@ EOF;
     echo "* Generating random master key\n";
     $masterKey = Cli\SecretBox::generateSecretKey();
     echo "* Creating \"$fdSecretsFile\"\n";
-    $secretsFile = new \SplFileObject($fdSecretsFile, 'w');
+    $secretsFile = new SplFileObject($fdSecretsFile, 'w');
     $secretsFile->fwrite('RequestHeader set FDKEY ' . base64_encode($masterKey) . "\n");
     $this->setFileRights($fdSecretsFile, 0600, 'root', 'root');
 
@@ -1029,11 +1035,11 @@ EOF;
       printf('Searching for locale files in %s' . "\n", $localeDir);
     }
     /* Recursive iterator on the directory */
-    $Directory = new \RecursiveDirectoryIterator($localeDir, \FilesystemIterator::KEY_AS_PATHNAME | \FilesystemIterator::CURRENT_AS_PATHNAME);
+    $Directory = new RecursiveDirectoryIterator($localeDir, FilesystemIterator::KEY_AS_PATHNAME | FilesystemIterator::CURRENT_AS_PATHNAME);
     /* Flatten the iterator to iterate directly on all files in the tree */
-    $Iterator = new \RecursiveIteratorIterator($Directory);
+    $Iterator = new RecursiveIteratorIterator($Directory);
     /* Filter by regex */
-    $Regex = new \RegexIterator($Iterator, '/^.+\/fusiondirectory.po$/i');
+    $Regex = new RegexIterator($Iterator, '/^.+\/fusiondirectory.po$/i');
 
     $allFiles = [];
     foreach ($Regex as $file) {
