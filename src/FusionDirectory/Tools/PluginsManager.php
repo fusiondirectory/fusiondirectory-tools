@@ -478,6 +478,8 @@ class PluginsManager extends Cli\LdapApplication
       $this->copyDirectory($pluginPath->getPathname() . '/contrib/openldap', $this->vars['fd_home'] . '/contrib/openldap');
       $this->copyDirectory($pluginPath->getPathname() . '/contrib/etc', $this->vars['fd_config_dir'] . '/' . $pluginInfo['information']['name']);
       $this->copyDirectory($pluginPath->getPathname() . '/locale', $this->vars['fd_home'] . '/locale/plugins/' . $pluginInfo['information']['name'] . '/locale');
+      $this->copyDirectory($pluginPath->getPathname() . '/export', $this->vars['fd_home'] . '/plugins/export');
+      $this->copyDirectory($pluginPath->getPathname() . '/generic', $this->vars['fd_home'] . '/plugins/generic');
     }
     echo 'Please refresh FusionDirectory with fusiondirectory-configuration-manager --update-cache' . PHP_EOL;
   }
