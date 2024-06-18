@@ -115,7 +115,7 @@ class Setup extends Cli\LdapApplication
     parent::run($argv);
 
     if (isset($this->getopt['set-var']) && !empty($this->getopt['set-var'])) {
-      $this->cmdSetVar($this->getopt['set-var'] ?? []);
+      $this->cmdSetVar($this->getopt['set-var']);
       unset($this->getopt['set-var']);
     }
 

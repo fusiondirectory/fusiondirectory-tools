@@ -81,7 +81,7 @@ class Migration extends Cli\LdapApplication
     parent::run($argv);
 
     if (isset($this->getopt['set-var']) && !empty($this->getopt['set-var'])) {
-      $this->cmdSetVar($this->getopt['set-var'] ?? []);
+      $this->cmdSetVar($this->getopt['set-var']);
       unset($this->getopt['set-var']);
     }
 
@@ -188,7 +188,7 @@ class Migration extends Cli\LdapApplication
   {
     try {
       $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
-    } catch (Exception|SodiumException $e) {
+    } catch (Exception | SodiumException $e) {
       echo $e->getMessage();
     }
 
@@ -328,7 +328,7 @@ class Migration extends Cli\LdapApplication
   {
     try {
       $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
-    } catch (Exception|SodiumException $e) {
+    } catch (Exception | SodiumException $e) {
     }
 
     if ($this->verbose()) {
@@ -378,7 +378,7 @@ class Migration extends Cli\LdapApplication
   {
     try {
       $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
-    } catch (Exception|SodiumException $e) {
+    } catch (Exception | SodiumException $e) {
       echo $e->getMessage();
     }
 
