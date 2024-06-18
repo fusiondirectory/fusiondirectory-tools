@@ -33,11 +33,6 @@ class InsertSchema extends Cli\Application
   protected Ldap\Link $ldap;
 
   /**
-   * @var ?string
-   */
-  protected ?string $db;
-
-  /**
    * @var string
    */
   protected string $defaultSchemaDir = '/etc/ldap/schema';
@@ -158,11 +153,11 @@ class InsertSchema extends Cli\Application
       'STRUCTURAL', 'AUXILIARY', 'ABSTRACT',
     ];
 
-    if (preg_match('/^(\{\d+\})?\(\s*([\d\.a-zA-Z:]+)\s+/', $definition, $m, PREG_OFFSET_CAPTURE) === 1) {
+    if (preg_match('/^(\{\d+})?\(\s*([\d.a-zA-Z:]+)\s+/', $definition, $m, PREG_OFFSET_CAPTURE) === 1) {
       echo '( ' . $m[2][0];
       $offset    = strlen($m[0][0]);
       $breakline = TRUE;
-      while (preg_match('/(([\w\.\{\}-]+|\'[^\']+\'|\([^\)]+\))(\s+|\)))/', $definition, $m, PREG_OFFSET_CAPTURE, $offset)) {
+      while (preg_match('/(([\w.{}-]+|\'[^\']+\'|\([^)]+\))(\s+|\)))/', $definition, $m, PREG_OFFSET_CAPTURE, $offset)) {
         if ($breakline) {
           echo "\n\t";
           $breakline = FALSE;
@@ -235,7 +230,7 @@ class InsertSchema extends Cli\Application
       echo "Schemas:\n";
     }
     foreach ($list as $schema) {
-      printf(' %-30s' . "\t", preg_replace('/^\{\d+\}/', '', $schema['cn'][0]) . ':');
+      printf(' %-30s' . "\t", preg_replace('/^\{\d+}/', '', $schema['cn'][0]) . ':');
       if (isset($schema['createTimestamp'])) {
         printf('Added: %s', static::formatLdapDate($schema['createTimestamp'][0]));
       }
@@ -300,10 +295,12 @@ class InsertSchema extends Cli\Application
   }
 
   /**
-   * @param array<string> $args
+   * @param string $schema
+   * @throws \Exception
    */
   protected function emptySchema (string $schema): void
   {
+    $schemaName = NULL; $schemaPath = NULL; $list = NULL;
     try {
       [$schemaPath, $schemaName, $list] = $this->gatherSchemaInformation($schema);
     } catch (Exception $e) {
@@ -352,7 +349,7 @@ class InsertSchema extends Cli\Application
     $name = basename($path);
     preg_match('/(.*)\.(ldif|schema)/', $name, $match);
 
-    if (isset($match[1]) && !empty($match[1])) {
+    if (!empty($match[1])) {
       $name = $match[1];
     } else {
       throw new \Exception('File extension error, must be .ldif or .schema');
@@ -367,7 +364,7 @@ class InsertSchema extends Cli\Application
   }
 
   /**
-   * @param array<string> $args
+   * @param string $arg
    */
   protected function insertSchema (string $arg): void
   {
@@ -412,11 +409,13 @@ class InsertSchema extends Cli\Application
   }
 
   /**
-   * @param array<string> $args
+   * @param string $arg
    * @throws \Exception
    */
   protected function removeSchema (string $arg): void
   {
+    $schemaName = NULL; $schemaPath = NULL; $list = NULL;
+
     try {
       [$schemaPath, $schemaName, $list] = $this->gatherSchemaInformation($arg);
     } catch (Exception $e) {
@@ -441,11 +440,12 @@ class InsertSchema extends Cli\Application
 
 
   /**
-   * @param array $attribute
+   * @param string $attribute
    * @return void
    */
   protected function showAttribute (string $attribute): void
   {
+    $list = NULL;
     try {
       $list = $this->ldap->search(
         'cn=schema,cn=config',
@@ -464,7 +464,7 @@ class InsertSchema extends Cli\Application
       printf('Search for Attribute %s failed: %s' . "\n", $attribute, $e->getMessage());
     }
     foreach ($list as $schema) {
-      printf(' %-30s' . "\t", preg_replace('/^\{\d+\}/', '', $schema['cn'][0]) . ':');
+      printf(' %-30s' . "\t", preg_replace('/^\{\d+}/', '', $schema['cn'][0]) . ':');
       if (isset($schema['createTimestamp'])) {
         printf('Added: %s', static::formatLdapDate($schema['createTimestamp'][0]));
       }
@@ -478,7 +478,7 @@ class InsertSchema extends Cli\Application
       }
       echo "\n";
       foreach ($schema['olcAttributeTypes'] as $olcAttributeType) {
-        if (preg_match('/^(\{\d+\})?\(\s*([\d\.a-zA-Z:]+)\s+NAME[\s\(]+\'' . $attribute . '\'/i', $olcAttributeType) === 1) {
+        if (preg_match('/^(\{\d+})?\(\s*([\d.a-zA-Z:]+)\s+NAME[\s(]+\'' . $attribute . '\'/i', $olcAttributeType) === 1) {
           echo 'attributetype ';
           $this->dumpDefinition($olcAttributeType);
         }

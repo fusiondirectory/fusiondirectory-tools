@@ -300,7 +300,7 @@ class PluginsManager extends Cli\LdapApplication
   }
 
   /**
-   * @param array $dn
+   * @param string $pluginName
    * @param bool $reinstall
    * @return void
    * Note : There are possibilities to reinstall the plugin when re-adding it via register function.

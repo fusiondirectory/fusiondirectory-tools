@@ -452,7 +452,6 @@ class Setup extends Cli\LdapApplication
    * @param array<string,array<string>> $config
    * @param array<int,string> $peopleBranches
    * @param array<int,string> $roles
-   * @throws Exception
    */
   protected function addLdapAdmin (array $config, array $peopleBranches, array $roles): void
   {
@@ -819,7 +818,7 @@ EOF;
 
 
   /**
-   * @param string $vars
+   * @param string $var
    * @return void
    * @throws Exception
    * @throws SodiumException

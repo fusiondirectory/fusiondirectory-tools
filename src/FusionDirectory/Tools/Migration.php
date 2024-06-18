@@ -182,10 +182,15 @@ class Migration extends Cli\LdapApplication
 
   /**
    * Check for duplication uid or gid numbers in the LDAP tree
+   * @throws Exception
    */
   protected function cmdCheckIds (): void
   {
-    $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception|SodiumException $e) {
+      echo $e->getMessage();
+    }
 
     $this->checkIdNumbers('posixAccount', 'uidNumber', 'users');
 
@@ -225,6 +230,7 @@ class Migration extends Cli\LdapApplication
   /**
    * Check if there are entries using deprecated attributes or classes in the LDAP tree
    * @throws Exception
+   * @throws SodiumException
    */
   protected function cmdCheckDeprecated (): void
   {
@@ -280,6 +286,7 @@ class Migration extends Cli\LdapApplication
   /**
    * Remove SupAnn root information from FD<1.4
    * @throws Exception
+   * @throws SodiumException
    */
   protected function cmdRemoveSupannRoot (): void
   {
@@ -316,10 +323,14 @@ class Migration extends Cli\LdapApplication
 
   /**
    * Add object classes to people branch users
+   * @throws Exception
    */
   protected function cmdMigrateUsers (): void
   {
-    $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception|SodiumException $e) {
+    }
 
     if ($this->verbose()) {
       printf('Searching for user objects missing objectClass inetOrgPerson'."\n");
@@ -362,10 +373,15 @@ class Migration extends Cli\LdapApplication
 
   /**
    * Migrate interfaces from FD<1.4 to FD>=1.4
+   * @throws Exception
    */
   protected function cmdMigrateInterfaces (): void
   {
-    $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception|SodiumException $e) {
+      echo $e->getMessage();
+    }
 
     $entriesToMigrate = [];
     $entriesToIgnore  = [];
