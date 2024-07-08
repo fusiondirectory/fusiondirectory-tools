@@ -466,11 +466,15 @@ class PluginsManager extends Cli\LdapApplication
 
     // If package do not install
     if ($pluginInfo['information']['origin'] !== 'package') {
-      // YAML description must be saved within : /etc/fusiondirectory/yaml/nomplugin/description.yaml
+      // YAML description must be saved within : /etc/fusiondirectory/yaml/plugin_name/description.yaml
       $this->copyDirectory($pluginPath->getPathname() . '/contrib/yaml', $this->vars['fd_config_dir'] . '/yaml/' . $pluginInfo['information']['name'] . '/');
-      $this->copyDirectory($pluginPath->getPathname() . '/addons', $this->vars['fd_home'] . '/plugins/addons');
-      $this->copyDirectory($pluginPath->getPathname() . '/admin', $this->vars['fd_home'] . '/plugins/admin');
-      $this->copyDirectory($pluginPath->getPathname() . '/config', $this->vars['fd_home'] . '/plugins/config');
+      // Historical - retro compatibility
+      $this->copyDirectory($pluginPath->getPathname() . '/admin', $this->vars['fd_home'] . '/plugins/management');
+      $this->copyDirectory($pluginPath->getPathname() . '/config', $this->vars['fd_home'] . '/plugins/configuration/backend');
+      // End of  historical - retro compatibility
+      $this->copyDirectory($pluginPath->getPathname() . '/backend', $this->vars['fd_home'] . '/plugins/configuration/backend');
+      $this->copyDirectory($pluginPath->getPathname() . '/management', $this->vars['fd_home'] . '/plugins/management');
+      $this->copyDirectory($pluginPath->getPathname() . '/workflow', $this->vars['fd_home'] . '/plugins/workflow');
       $this->copyDirectory($pluginPath->getPathname() . '/personal', $this->vars['fd_home'] . '/plugins/personal');
       $this->copyDirectory($pluginPath->getPathname() . '/html', $this->vars['fd_home'] . '/html');
       $this->copyDirectory($pluginPath->getPathname() . '/ihtml', $this->vars['fd_home'] . '/ihtml');
@@ -508,11 +512,16 @@ class PluginsManager extends Cli\LdapApplication
         $final_path = implode('/', $dirs);
 
         switch ($dirs[0]) {
-          case 'config':
+          case 'backend':
+          case 'workflow':
           case 'personal':
-          case 'admin':
+          case 'management':
           case 'include':
+          // Historical - retro compatibility
+          case 'admin':
           case 'addons':
+          case 'config':
+          // End of  historical - retro compatibility
             $this->removeFile($this->vars['fd_home'] . '/plugins/' . $final_path);
             break;
           case 'ihtml':
