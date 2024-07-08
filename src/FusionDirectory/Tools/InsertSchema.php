@@ -25,12 +25,10 @@ use FusionDirectory\Cli;
 use FusionDirectory\Ldap;
 use FusionDirectory\Ldap\Exception;
 
-class InsertSchema extends Cli\Application
+class InsertSchema extends Cli\LdapApplication
 {
-  /**
-   * @var Ldap\Link
-   */
-  protected Ldap\Link $ldap;
+
+  protected ?Ldap\Link $ldap;
 
   /**
    * @var string
@@ -108,17 +106,17 @@ class InsertSchema extends Cli\Application
   {
     parent::run($argv);
 
-    $this->ldap = new Ldap\Link($this->getopt['ldapuri'][0] ?? 'ldapi:///');
+    $this->ldap = new Ldap\Link($this->getopt['ldapuri'] ?? 'ldapi:///');
     if ($this->getopt['simplebind'] > 0) {
-      $this->ldap->bind(($this->getopt['binddn'][0] ?? ''), ($this->getopt['bindpwd'][0] ?? ''));
+      $this->ldap->bind(($this->getopt['binddn'] ?? ''), ($this->getopt['bindpwd'] ?? ''));
     } else {
       $this->ldap->saslBind(
-        ($this->getopt['binddn'][0] ?? ''),
-        ($this->getopt['bindpwd'][0] ?? ''),
-        ($this->getopt['saslmech'][0] ?? 'EXTERNAL'),
-        ($this->getopt['saslrealm'][0] ?? ''),
-        ($this->getopt['saslauthcid'][0] ?? ''),
-        ($this->getopt['saslauthzid'][0] ?? '')
+        ($this->getopt['binddn'] ?? ''),
+        ($this->getopt['bindpwd'] ?? ''),
+        ($this->getopt['saslmech'] ?? 'EXTERNAL'),
+        ($this->getopt['saslrealm'] ?? ''),
+        ($this->getopt['saslauthcid'] ?? ''),
+        ($this->getopt['saslauthzid'] ?? '')
       );
     }
 
@@ -230,19 +228,7 @@ class InsertSchema extends Cli\Application
       echo "Schemas:\n";
     }
     foreach ($list as $schema) {
-      printf(' %-30s' . "\t", preg_replace('/^\{\d+}/', '', $schema['cn'][0]) . ':');
-      if (isset($schema['createTimestamp'])) {
-        printf('Added: %s', static::formatLdapDate($schema['createTimestamp'][0]));
-      }
-      if (empty($schema['olcAttributeTypes']) && empty($schema['olcObjectClasses'])) {
-        echo ' - Empty';
-      } else {
-        echo sprintf(' - Attributes:%3d, ObjectClasses:%3d', count($schema['olcAttributeTypes'] ?? []), count($schema['olcObjectClasses'] ?? []));
-      }
-      if (isset($schema['modifyTimestamp']) && ($schema['createTimestamp'][0] != $schema['modifyTimestamp'][0])) {
-        printf(' (Modified: %s)', static::formatLdapDate($schema['modifyTimestamp'][0]));
-      }
-      echo "\n";
+      $this->printSchemaInfo($schema);
       if ($schemaSearch !== NULL) {
         if (isset($schema['olcObjectIdentifier'])) {
           echo "\n" . '# Object identifiers:' . "\n";
@@ -464,19 +450,7 @@ class InsertSchema extends Cli\Application
       printf('Search for Attribute %s failed: %s' . "\n", $attribute, $e->getMessage());
     }
     foreach ($list as $schema) {
-      printf(' %-30s' . "\t", preg_replace('/^\{\d+}/', '', $schema['cn'][0]) . ':');
-      if (isset($schema['createTimestamp'])) {
-        printf('Added: %s', static::formatLdapDate($schema['createTimestamp'][0]));
-      }
-      if (empty($schema['olcAttributeTypes']) && empty($schema['olcObjectClasses'])) {
-        echo ' - Empty';
-      } else {
-        echo sprintf(' - Attributes:%3d, ObjectClasses:%3d', count($schema['olcAttributeTypes'] ?? []), count($schema['olcObjectClasses'] ?? []));
-      }
-      if (isset($schema['modifyTimestamp']) && ($schema['createTimestamp'][0] != $schema['modifyTimestamp'][0])) {
-        printf(' (Modified: %s)', static::formatLdapDate($schema['modifyTimestamp'][0]));
-      }
-      echo "\n";
+      $this->printSchemaInfo($schema);
       foreach ($schema['olcAttributeTypes'] as $olcAttributeType) {
         if (preg_match('/^(\{\d+})?\(\s*([\d.a-zA-Z:]+)\s+NAME[\s(]+\'' . $attribute . '\'/i', $olcAttributeType) === 1) {
           echo 'attributetype ';
@@ -522,6 +496,27 @@ class InsertSchema extends Cli\Application
     }
 
     $this->printTree($tree, 'olcConfig');
+  }
+
+  /**
+   * @param array $schema
+   * @return void
+   */
+  protected function printSchemaInfo (array &$schema): void
+  {
+    printf(' %-30s' . "\t", preg_replace('/^\{\d+}/', '', $schema['cn'][0]) . ':');
+    if (isset($schema['createTimestamp'])) {
+      printf('Added: %s', static::formatLdapDate($schema['createTimestamp'][0]));
+    }
+    if (empty($schema['olcAttributeTypes']) && empty($schema['olcObjectClasses'])) {
+      echo ' - Empty';
+    } else {
+      echo sprintf(' - Attributes:%3d, ObjectClasses:%3d', count($schema['olcAttributeTypes'] ?? []), count($schema['olcObjectClasses'] ?? []));
+    }
+    if (isset($schema['modifyTimestamp']) && ($schema['createTimestamp'][0] != $schema['modifyTimestamp'][0])) {
+      printf(' (Modified: %s)', static::formatLdapDate($schema['modifyTimestamp'][0]));
+    }
+    echo "\n";
   }
 
 }
