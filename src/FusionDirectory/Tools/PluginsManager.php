@@ -517,11 +517,11 @@ class PluginsManager extends Cli\LdapApplication
           case 'personal':
           case 'management':
           case 'include':
-          // Historical - retro compatibility
+            // Historical - retro compatibility
           case 'admin':
           case 'addons':
           case 'config':
-          // End of  historical - retro compatibility
+            // End of  historical - retro compatibility
             $this->removeFile($this->vars['fd_home'] . '/plugins/' . $final_path);
             break;
           case 'ihtml':
