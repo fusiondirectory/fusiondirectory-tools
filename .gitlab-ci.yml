@@ -83,6 +83,14 @@ trigger-ci-debian-bullseye:
     project: debian/bullseye-fusiondirectory-tools-dev
     branch: "main"
 
+trigger-ci-ubuntu-focal:
+  stage: trigger
+  only:
+    - dev
+  trigger:
+    project: ubuntu/focal-fusiondirectory-tools-dev
+    branch: "main"
+
 trigger-ci-centos-7:
   stage: trigger
   only:
