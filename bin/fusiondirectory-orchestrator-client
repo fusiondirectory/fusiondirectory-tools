@@ -26,7 +26,7 @@ class OrchestratorClient
     $this->logging = '/var/log/orchestrator/orchestrator.log';
 
     $this->listOfArguments = ['--help', '-h', '--verbose', '-v', '--debug', '-d', '--emails', '-m', '--tasks', '-t',
-      '--lifeCycle', '-c', '--remove', '-r', '--log', '-l', '--activateCyclicTasks', '-a', '--notifications', '-n', '--audit'];
+      '--lifeCycle', '-c', '--remove', '-r', '--log', '-l', '--activateCyclicTasks', '-a', '--notifications', '-n', '--audit', '-e', '--reminder'];
 
     $orchestratorFQDN        = $_ENV["ORCHESTRATOR_API_URL"];
     $this->loginEndPoint     = $orchestratorFQDN . '/api/login';
@@ -35,6 +35,7 @@ class OrchestratorClient
     $this->lifeCycleEndPoint = $this->tasksEndPoint . 'lifeCycle';
     $this->notificationsEndPoint = $this->tasksEndPoint . 'notifications';
     $this->auditEndPoint = $this->tasksEndPoint . 'audit';
+    $this->reminderEndPoint = $this->tasksEndPoint . 'reminder';
     // Only remove completed sub-tasks
     $this->removeSubTasksEndPoint = $this->tasksEndPoint . 'removeSubTasks';
     // Only activate required cyclic tasks
@@ -178,6 +179,10 @@ class OrchestratorClient
         $ch = curl_init($this->auditEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
+      case 'reminder':
+        $ch = curl_init($this->reminderEndPoint);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        break;
     }
 
     //headers for the patch curl method containing the access_token
@@ -253,6 +258,10 @@ class OrchestratorClient
         case '-a':
           $tasksToBeExecuted[] = 'activateCyclicTasks';
           break;
+        case '--reminder':
+        case '-e':
+          $tasksToBeExecuted[] = 'reminder';
+          break;
         case '--audit':
           $tasksToBeExecuted[] = 'audit';
           break;
@@ -294,6 +303,9 @@ class OrchestratorClient
         case 'notifications' :
           $this->subTaskExec('notifications');
           break;
+        case 'reminder' :
+          $this->subTaskExec('reminder');
+          break;
         case 'audit' :
           $this->subTaskExec('audit');
           break;
@@ -333,6 +345,7 @@ class OrchestratorClient
     --emails (-m)               : Execute subtasks of type emails." . PHP_EOL . "
     --lifeCycle (-c)            : Execute subtasks of type lifeCycle." . PHP_EOL . "
     --notifications (-n)        : Execute subtasks of type notifications." . PHP_EOL . "
+    --reminder (-e)             : Execute subtasks of type reminder" . PHP_EOL . "
     --activateCyclicTasks (-a)  : Activate all due cyclic tasks." . PHP_EOL . "
     --remove (-r)               : Remove all completed sub-tasks." . PHP_EOL . "
     --log (-l)                  : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log." . PHP_EOL . "
