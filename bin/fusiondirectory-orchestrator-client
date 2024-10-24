@@ -26,7 +26,7 @@ class OrchestratorClient
     $this->logging = '/var/log/orchestrator/orchestrator.log';
 
     $this->listOfArguments = ['--help', '-h', '--verbose', '-v', '--debug', '-d', '--emails', '-m', '--tasks', '-t',
-      '--lifeCycle', '-c', '--remove', '-r', '--log', '-l', '--activateCyclicTasks', '-a', '--notifications', '-n', '--audit', '-e', '--reminder'];
+      '--lifeCycle', '-c', '--removeCompletedTasks', '-r', '--log', '-l', '--activateCyclicTasks', '-a', '--notifications', '-n', '--audit', '-e', '--reminder'];
 
     $orchestratorFQDN        = $_ENV["ORCHESTRATOR_API_URL"];
     $this->loginEndPoint     = $orchestratorFQDN . '/api/login';
@@ -246,7 +246,7 @@ class OrchestratorClient
         case '-t':
           $tasksToBeExecuted[] = 'tasks';
           break;
-        case '--removeSubTasks':
+        case '--removeCompletedTasks':
         case '-r':
           $tasksToBeExecuted[] = 'removeSubTasks';
           break;
@@ -347,7 +347,7 @@ class OrchestratorClient
     --notifications (-n)        : Execute subtasks of type notifications." . PHP_EOL . "
     --reminder (-e)             : Execute subtasks of type reminder" . PHP_EOL . "
     --activateCyclicTasks (-a)  : Activate all due cyclic tasks." . PHP_EOL . "
-    --remove (-r)               : Remove all completed sub-tasks." . PHP_EOL . "
+    --removeCompletedTasks (-r) : Remove all completed sub-tasks." . PHP_EOL . "
     --log (-l)                  : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log." . PHP_EOL . "
     --audit                     : Allows management of audit log" . PHP_EOL . "
     --tasks (-t)                : Show all tasks." . PHP_EOL;
