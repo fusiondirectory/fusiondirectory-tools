@@ -25,8 +25,8 @@ class OrchestratorClient
     // App logging
     $this->logging = '/var/log/orchestrator/orchestrator.log';
 
-    $this->listOfArguments = ['--help', '-h', '--verbose', '-v', '--debug', '-d', '--emails', '-m', '--tasks', '-t',
-      '--lifeCycle', '-c', '--removeCompletedTasks', '-r', '--log', '-l', '--activateCyclicTasks', '-a', '--notifications', '-n', '--audit', '-e', '--reminder'];
+    $this->listOfArguments = ['--help', '--verbose', '--debug', '--emails', '--tasks',
+      '--lifeCycle', '--removeCompletedTasks', '--log', '--activateCyclicTasks', '--notifications', '--audit', '--reminder'];
 
     $orchestratorFQDN        = $_ENV["ORCHESTRATOR_API_URL"];
     $this->loginEndPoint     = $orchestratorFQDN . '/api/login';
@@ -201,7 +201,7 @@ class OrchestratorClient
 
   public function run ($args): int
   {
-    if (in_array('--help', $args) || count($args) < 2 || in_array('-h', $args)) {
+    if (in_array('--help', $args) || count($args) < 2) {
       $this->printUsage();
       return 1; // Return error code
     }
@@ -227,52 +227,42 @@ class OrchestratorClient
       }
       switch ($arg) {
         case '--verbose':
-        case '-v':
           $this->verbose = TRUE;
           break;
         case '--debug':
-        case '-d':
           $this->debug = TRUE;
           break;
         case '--emails':
-        case '-m':
           $tasksToBeExecuted[] = 'emails';
           break;
         case '--lifeCycle':
-        case '-c':
           $tasksToBeExecuted[] = 'lifeCycle';
           break;
         case '--tasks':
-        case '-t':
           $tasksToBeExecuted[] = 'tasks';
           break;
         case '--removeCompletedTasks':
-        case '-r':
           $tasksToBeExecuted[] = 'removeSubTasks';
           break;
         case '--notifications':
-        case '-n':
           $tasksToBeExecuted[] = 'notifications';
           break;
         case '--activateCyclicTasks':
-        case '-a':
           $tasksToBeExecuted[] = 'activateCyclicTasks';
           break;
         case '--reminder':
-        case '-e':
           $tasksToBeExecuted[] = 'reminder';
           break;
         case '--audit':
           $tasksToBeExecuted[] = 'audit';
           break;
         case '--log':
-        case '-l':
           // Simply verify if the argument is the last and does not contain a possible argument starting with '-'
           if (isset($args[$index + 1]) && !isset($args[$index + 2]) && substr($args[$index + 1], 0, 1) !== "-") {
             $this->setLogConfig($args[$index + 1]);
           } else {
             if ($this->verbose === TRUE) {
-              echo 'The --log or -l must be followed by a valid path and be the last argument' . PHP_EOL;
+              echo 'The --log option must be followed by a valid path and be the last argument' . PHP_EOL;
             }
             exit;
           }
@@ -339,18 +329,18 @@ class OrchestratorClient
   private function printUsage ()
   {
     echo "Usage: fusiondirectory-orchestrator-client --args" . PHP_EOL . "
-    --help (-h)                 : Show this helper message." . PHP_EOL . "
-    --verbose (-v)              : Show curl returned messages." . PHP_EOL . "
-    --debug (-d)                : Show debug and errors messages." . PHP_EOL . "
-    --emails (-m)               : Execute subtasks of type emails." . PHP_EOL . "
-    --lifeCycle (-c)            : Execute subtasks of type lifeCycle." . PHP_EOL . "
-    --notifications (-n)        : Execute subtasks of type notifications." . PHP_EOL . "
-    --reminder (-e)             : Execute subtasks of type reminder" . PHP_EOL . "
-    --activateCyclicTasks (-a)  : Activate all due cyclic tasks." . PHP_EOL . "
-    --removeCompletedTasks (-r) : Remove all completed sub-tasks." . PHP_EOL . "
-    --log (-l)                  : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log." . PHP_EOL . "
-    --audit                     : Allows management of audit log" . PHP_EOL . "
-    --tasks (-t)                : Show all tasks." . PHP_EOL;
+    --help                  : Show this helper message." . PHP_EOL . "
+    --verbose               : Show curl returned messages." . PHP_EOL . "
+    --debug                 : Show debug and errors messages." . PHP_EOL . "
+    --emails                : Execute subtasks of type emails." . PHP_EOL . "
+    --lifeCycle             : Execute subtasks of type lifeCycle." . PHP_EOL . "
+    --notifications         : Execute subtasks of type notifications." . PHP_EOL . "
+    --reminder              : Execute subtasks of type reminder" . PHP_EOL . "
+    --activateCyclicTasks   : Activate all due cyclic tasks." . PHP_EOL . "
+    --removeCompletedTasks  : Remove all completed sub-tasks." . PHP_EOL . "
+    --log                   : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log." . PHP_EOL . "
+    --audit                 : Allows management of audit log" . PHP_EOL . "
+    --tasks                 : Show all tasks." . PHP_EOL;
 
     exit;
   }
