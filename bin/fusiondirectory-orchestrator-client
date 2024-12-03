@@ -26,7 +26,7 @@ class OrchestratorClient
     $this->logging = '/var/log/orchestrator/orchestrator.log';
 
     $this->listOfArguments = ['--help', '--verbose', '--debug', '--emails', '--tasks',
-      '--lifeCycle', '--removeCompletedTasks', '--log', '--activateCyclicTasks', '--notifications', '--audit', '--reminder'];
+      '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder'];
 
     $orchestratorFQDN        = $_ENV["ORCHESTRATOR_API_URL"];
     $this->loginEndPoint     = $orchestratorFQDN . '/api/login';
@@ -159,15 +159,15 @@ class OrchestratorClient
         $ch = curl_init($this->emailEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
-      case 'lifeCycle':
+      case 'lifecycle':
         $ch = curl_init($this->lifeCycleEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
-      case 'removeSubTasks':
+      case 'remove':
         $ch = curl_init($this->removeSubTasksEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
-      case 'activateCyclicTasks':
+      case 'activate':
         $ch = curl_init($this->activateCyclicTasksEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
@@ -235,20 +235,20 @@ class OrchestratorClient
         case '--emails':
           $tasksToBeExecuted[] = 'emails';
           break;
-        case '--lifeCycle':
-          $tasksToBeExecuted[] = 'lifeCycle';
+        case '--lifecycle':
+          $tasksToBeExecuted[] = 'lifecycle';
           break;
         case '--tasks':
           $tasksToBeExecuted[] = 'tasks';
           break;
-        case '--removeCompletedTasks':
-          $tasksToBeExecuted[] = 'removeSubTasks';
+        case '--remove':
+          $tasksToBeExecuted[] = 'remove';
           break;
         case '--notifications':
           $tasksToBeExecuted[] = 'notifications';
           break;
-        case '--activateCyclicTasks':
-          $tasksToBeExecuted[] = 'activateCyclicTasks';
+        case '--activate':
+          $tasksToBeExecuted[] = 'activate';
           break;
         case '--reminder':
           $tasksToBeExecuted[] = 'reminder';
@@ -278,17 +278,17 @@ class OrchestratorClient
         case 'emails' :
           $this->subTaskExec('mail');
           break;
-        case 'lifeCycle' :
-          $this->subTaskExec('lifeCycle');
+        case 'lifecycle' :
+          $this->subTaskExec('lifecycle');
           break;
         case 'tasks' :
           $this->showTasks();
           break;
-        case 'removeSubTasks' :
-          $this->subTaskExec('removeSubTasks');
+        case 'remove' :
+          $this->subTaskExec('remove');
           break;
-        case 'activateCyclicTasks' :
-          $this->subTaskExec('activateCyclicTasks');
+        case 'activate' :
+          $this->subTaskExec('activate');
           break;
         case 'notifications' :
           $this->subTaskExec('notifications');
@@ -333,11 +333,11 @@ class OrchestratorClient
     --verbose               : Show curl returned messages." . PHP_EOL . "
     --debug                 : Show debug and errors messages." . PHP_EOL . "
     --emails                : Execute subtasks of type emails." . PHP_EOL . "
-    --lifeCycle             : Execute subtasks of type lifeCycle." . PHP_EOL . "
+    --lifecycle             : Execute subtasks of type life cycle." . PHP_EOL . "
     --notifications         : Execute subtasks of type notifications." . PHP_EOL . "
     --reminder              : Execute subtasks of type reminder" . PHP_EOL . "
-    --activateCyclicTasks   : Activate all due cyclic tasks." . PHP_EOL . "
-    --removeCompletedTasks  : Remove all completed sub-tasks." . PHP_EOL . "
+    --activate              : Activate all due cyclic tasks." . PHP_EOL . "
+    --remove                : Remove all completed sub-tasks." . PHP_EOL . "
     --log                   : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log." . PHP_EOL . "
     --audit                 : Allows management of audit log" . PHP_EOL . "
     --tasks                 : Show all tasks." . PHP_EOL;
