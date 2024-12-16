@@ -1,3 +1,28 @@
+## %"FusionDirectory Tools 1.2" - 2024-12-16
+
+### Added
+
+#### fusiondirectory-tools
+- fusiondirectory-tools#67 [Tools] - Adapt applications to use the new integrator logic and libraries
+- fusiondirectory-tools#68 [PluginManager] - add missing copy path
+- fusiondirectory-tools#69 [Tools] - Update plugin manager with new directory structure
+- fusiondirectory-tools#70 [FD-Tools] - Fixes insert-schema when using bindn and ldapui in a non root privileges
+- fusiondirectory-tools#73 [Tools] - Audit option within orchestrator client - allowing deletion of historical logs based on retention days
+- fusiondirectory-tools#76 [Reminder] - New endpoint reminder created in orchestrator require its binary to be updated
+- fusiondirectory-tools#77 [Tools] - Orchestrator Client - remove short options to only keep long ones
+- fusiondirectory-tools#78 [Tools] - Add doxyfile
+- fusiondirectory-tools#83 [Tools] - options to remove subtaks completed is unclear and not working - only the short option does the work
+
+### Changed
+
+#### fusiondirectory-tools
+- fusiondirectory-tools#60 [Client-Orchestrator] - Update the binary to allow call to notifications endpoint
+
+### Fixed
+
+#### fusiondirectory-tools
+- fusiondirectory-tools#66 [PluginManager] - re-installing a plugin should be efficient - current bug does not allow ldap deletetion when registering and existing plugin, not allowing updates
+
 ## %"FusionDirectory Tools 1.1" - 2024-04-05
 
 ### Fixed
