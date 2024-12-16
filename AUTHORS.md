@@ -18,3 +18,7 @@ documentation and additional help.
 * Bachelot Xavier <xavier@bachelot.org>
   Fix group checking, locale cleaning in fusiondirectory-configuration-manager
   Fix some english sentences
+
+* Alexa Oana Eliza <alexa.oanaeliza@fusiondirectory.org>
+  QA, Writing test framework
+
