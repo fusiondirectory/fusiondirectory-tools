@@ -396,7 +396,7 @@ class Migration extends Cli\LdapApplication
       $list2 = $this->ldap->search($dn, '(objectClass=fdNetworkInterface)', [], 'one');
       $list2->assert();
       if ($list2->count() == 0) {
-        $macs = $entry['macAddress'];
+        $macs = $entry['macAddress'] ?? [];
         if (count($macs) > 1) {
           $entriesToIgnore[$dn] = $entry;
           continue;
@@ -408,7 +408,7 @@ class Migration extends Cli\LdapApplication
     if (count($entriesToMigrate) > 0) {
       echo 'The following systems are missing an interface node and can be migrated automatically:' . "\n";
       foreach ($entriesToMigrate as $dn => $entry) {
-        $macs = $entry['macAddress'];
+        $macs = $entry['macAddress'] ?? [];
         $ips  = $entry['ipHostNumber'];
         echo $dn;
         if (count($macs) > 0) {
@@ -428,7 +428,7 @@ class Migration extends Cli\LdapApplication
         $interface_cn = $this->askUserInput('Please enter the name for interfaces created by this migration', 'eth0');
         $count        = 0;
         foreach ($entriesToMigrate as $dn => $entry) {
-          $macs      = $entry['macAddress'];
+          $macs      = $entry['macAddress'] ?? [];
           $ips       = $entry['ipHostNumber'];
           $interface = [
             'cn'          => $interface_cn,
