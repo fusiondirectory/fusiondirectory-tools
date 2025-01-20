@@ -24,6 +24,7 @@ namespace FusionDirectory\Tools;
 use FilesystemIterator;
 use FusionDirectory\Cli;
 use FusionDirectory\Ldap\Exception;
+use MongoDB\Driver\Command;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use RegexIterator;
@@ -133,8 +134,14 @@ class Setup extends Cli\LdapApplication
         printf("# %s\n", $this->options[$key]['help']);
         call_user_func([$this, $this->options[$key]['command']]);
       } elseif (isset($this->options[$key . ':']['command'])) {
-        printf("# %s: %s\n", $this->options[$key . ':']['help'], implode(', ', $value));
-        call_user_func([$this, $this->options[$key . ':']['command']], $value);
+        if (is_array($value)) {
+          printf("# %s: %s\n", $this->options[$key . ':']['help'], implode(', ', $value));
+          call_user_func([$this, $this->options[$key . ':']['command']], $value);
+          // Fix an issue with setup causing value to be string instead of array required for implode.
+        } else {
+          printf("# %s: %s\n", $this->options[$key . ':']['help'], implode(', ', [$value]));
+          call_user_func([$this, $this->options[$key . ':']['command']], $value);
+        }
       }
     }
   }
