@@ -1,4 +1,4 @@
-## %"FusionDirectory Tools 1.2" - 2024-12-16
+## %"FusionDirectory Tools 1.2" - 2025-01-31
 
 ### Added
 
@@ -22,6 +22,8 @@
 
 #### fusiondirectory-tools
 - fusiondirectory-tools#66 [PluginManager] - re-installing a plugin should be efficient - current bug does not allow ldap deletetion when registering and existing plugin, not allowing updates
+- fusiondirectory-tools#88 [Tools] - Migration - issue during migration of interfaces
+- fusiondirectory-tools#90 [tools] - setup - error when string received when expecting array
 
 ## %"FusionDirectory Tools 1.1" - 2024-04-05
 
