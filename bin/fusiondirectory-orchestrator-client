@@ -9,14 +9,16 @@ class OrchestratorClient
   private bool $verbose, $debug;
   private string $loginEndPoint, $emailEndPoint, $tasksEndPoint, $lifeCycleEndPoint, $logging,
     $removeSubTasksEndPoint, $notificationsEndPoint, $archiveEndPoint;
-  private string $activateCyclicTasksEndPoint;
+  private string $activateCyclicTasksEndPoint, $extractorEndPoint;
   private array $loginData, $listOfArguments;
   private ?string $accessToken;
+  private ?string $extractorPath;
 
   public function __construct ()
   {
     // Tokens details
     $this->accessToken = NULL;
+    $this->extractorPath = NULL;
 
     // App details
     $this->verbose = FALSE;
@@ -26,7 +28,7 @@ class OrchestratorClient
     $this->logging = '/var/log/orchestrator/orchestrator.log';
 
     $this->listOfArguments = ['--help', '--verbose', '--debug', '--emails', '--tasks',
-      '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder', '--archive'];
+      '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder', '--archive', '--extractor'];
 
     $orchestratorFQDN        = $_ENV["ORCHESTRATOR_API_URL"];
     $this->loginEndPoint     = $orchestratorFQDN . '/api/login';
@@ -37,6 +39,7 @@ class OrchestratorClient
     $this->auditEndPoint = $this->tasksEndPoint . 'audit';
     $this->reminderEndPoint = $this->tasksEndPoint . 'reminder';
     $this->archiveEndPoint = $this->tasksEndPoint . 'archive';
+    $this->extractorEndPoint = $this->tasksEndPoint . 'extractor';
     // Only remove completed sub-tasks
     $this->removeSubTasksEndPoint = $this->tasksEndPoint . 'removeSubTasks';
     // Only activate required cyclic tasks
@@ -188,6 +191,14 @@ class OrchestratorClient
         $ch = curl_init($this->archiveEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
+      case 'extractor':
+        $endpoint = $this->extractorEndPoint;
+        if ($this->extractorPath !== NULL) {
+          $endpoint .= '?path=' . urlencode($this->extractorPath);
+        }
+        $ch = curl_init($endpoint);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        break;
     }
 
     //headers for the patch curl method containing the access_token
@@ -261,8 +272,15 @@ class OrchestratorClient
         case '--audit':
           $tasksToBeExecuted[] = 'audit';
           break;
-        case '--archive': // Added case for --archive
+        case '--archive':
           $tasksToBeExecuted[] = 'archive';
+          break;
+        case '--extractor':
+          if (isset($args[$index + 1]) && substr($args[$index + 1], 0, 1) !== "-") {
+            $this->extractorPath = $args[$index + 1];
+            $skipNext = TRUE;
+          }
+          $tasksToBeExecuted[] = 'extractor';
           break;
         case '--log':
           // Simply verify if the argument is the last and does not contain a possible argument starting with '-'
@@ -307,8 +325,11 @@ class OrchestratorClient
         case 'audit' :
           $this->subTaskExec('audit');
           break;
-        case 'archive' : // Added case for archive
+        case 'archive' :
           $this->subTaskExec('archive');
+          break;
+        case 'extractor':
+          $this->subTaskExec('extractor');
           break;
       }
     }
@@ -349,9 +370,10 @@ class OrchestratorClient
     --reminder              : Execute subtasks of type reminder" . PHP_EOL . "
     --activate              : Activate all due cyclic tasks." . PHP_EOL . "
     --remove                : Remove all completed sub-tasks." . PHP_EOL . "
-    --log                   : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log." . PHP_EOL . "
+    --log                   : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log)." . PHP_EOL . "
     --audit                 : Allows management of audit log" . PHP_EOL . "
     --archive               : Execute subtasks of type archive" . PHP_EOL . "
+    --extractor [path]      : Execute subtasks of type extractor with optional path (Default is /srv/orchestrator/).". PHP_EOL . "
     --tasks                 : Show all tasks." . PHP_EOL;
 
     exit;
