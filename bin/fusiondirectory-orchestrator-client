@@ -13,12 +13,14 @@ class OrchestratorClient
   private array $loginData, $listOfArguments;
   private ?string $accessToken;
   private ?string $extractorPath;
+  private ?string $auditType;
 
   public function __construct ()
   {
     // Tokens details
     $this->accessToken = NULL;
     $this->extractorPath = NULL;
+    $this->auditType = NULL;
 
     // App details
     $this->verbose = FALSE;
@@ -182,6 +184,12 @@ class OrchestratorClient
       case 'audit':
         $ch = curl_init($this->auditEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        
+        // Add audit type as JSON data if provided
+        if ($this->auditType !== NULL) {
+          $jsonData = json_encode(['type' => $this->auditType]);
+          curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+        }
         break;
       case 'reminder':
         $ch = curl_init($this->reminderEndPoint);
@@ -193,11 +201,14 @@ class OrchestratorClient
         break;
       case 'extractor':
         $endpoint = $this->extractorEndPoint;
-        if ($this->extractorPath !== NULL) {
-          $endpoint .= '?path=' . urlencode($this->extractorPath);
-        }
         $ch = curl_init($endpoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        
+        // Add path as JSON data if provided
+        if ($this->extractorPath !== NULL) {
+          $jsonData = json_encode(['path' => $this->extractorPath]);
+          curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+        }
         break;
     }
 
@@ -270,6 +281,10 @@ class OrchestratorClient
           $tasksToBeExecuted[] = 'reminder';
           break;
         case '--audit':
+          if (isset($args[$index + 1]) && substr($args[$index + 1], 0, 1) !== "-") {
+            $this->auditType = $args[$index + 1];
+            $skipNext = TRUE;
+          }
           $tasksToBeExecuted[] = 'audit';
           break;
         case '--archive':
@@ -371,9 +386,9 @@ class OrchestratorClient
     --activate              : Activate all due cyclic tasks." . PHP_EOL . "
     --remove                : Remove all completed sub-tasks." . PHP_EOL . "
     --log                   : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log)." . PHP_EOL . "
-    --audit                 : Allows management of audit log" . PHP_EOL . "
+    --audit [type]          : Manage audit logs with optional type (standard or syslog)" . PHP_EOL . "
     --archive               : Execute subtasks of type archive" . PHP_EOL . "
-    --extractor [path]      : Execute subtasks of type extractor with optional path (Default is /srv/orchestrator/).". PHP_EOL . "
+    --extractor [path]      : Execute subtasks of type extractor with optional path (Default is /srv/orchestrator/)." . PHP_EOL . "
     --tasks                 : Show all tasks." . PHP_EOL;
 
     exit;
