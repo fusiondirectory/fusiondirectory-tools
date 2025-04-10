@@ -8,7 +8,7 @@ class OrchestratorClient
 {
   private bool $verbose, $debug;
   private string $loginEndPoint, $emailEndPoint, $tasksEndPoint, $lifeCycleEndPoint, $logging,
-    $removeSubTasksEndPoint, $notificationsEndPoint, $archiveEndPoint;
+    $removeSubTasksEndPoint, $notificationsEndPoint, $archiveEndPoint, $automaticGroupsEndPoint;
   private string $activateCyclicTasksEndPoint, $extractorEndPoint;
   private array $loginData, $listOfArguments;
   private ?string $accessToken;
@@ -30,7 +30,7 @@ class OrchestratorClient
     $this->logging = '/var/log/orchestrator/orchestrator.log';
 
     $this->listOfArguments = ['--help', '--verbose', '--debug', '--emails', '--tasks',
-      '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder', '--archive', '--extractor'];
+      '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder', '--archive', '--extractor', '--automatic-groups'];
 
     $orchestratorFQDN        = $_ENV["ORCHESTRATOR_API_URL"];
     $this->loginEndPoint     = $orchestratorFQDN . '/api/login';
@@ -42,6 +42,7 @@ class OrchestratorClient
     $this->reminderEndPoint = $this->tasksEndPoint . 'reminder';
     $this->archiveEndPoint = $this->tasksEndPoint . 'archive';
     $this->extractorEndPoint = $this->tasksEndPoint . 'extractor';
+    $this->automaticGroupsEndPoint = $this->tasksEndPoint . 'automaticGroups';
     // Only remove completed sub-tasks
     $this->removeSubTasksEndPoint = $this->tasksEndPoint . 'removeSubTasks';
     // Only activate required cyclic tasks
@@ -199,6 +200,10 @@ class OrchestratorClient
         $ch = curl_init($this->archiveEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
+      case 'automatic-groups':
+        $ch = curl_init($this->automaticGroupsEndPoint);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        break;
       case 'extractor':
         $endpoint = $this->extractorEndPoint;
         $ch = curl_init($endpoint);
@@ -297,6 +302,9 @@ class OrchestratorClient
           }
           $tasksToBeExecuted[] = 'extractor';
           break;
+        case '--automatic-groups':
+          $tasksToBeExecuted[] = 'automatic-groups';
+          break;
         case '--log':
           // Simply verify if the argument is the last and does not contain a possible argument starting with '-'
           if (isset($args[$index + 1]) && !isset($args[$index + 2]) && substr($args[$index + 1], 0, 1) !== "-") {
@@ -343,6 +351,9 @@ class OrchestratorClient
         case 'archive' :
           $this->subTaskExec('archive');
           break;
+        case 'automatic-groups' :
+          $this->subTaskExec('automatic-groups');
+          break;
         case 'extractor':
           $this->subTaskExec('extractor');
           break;
@@ -383,6 +394,7 @@ class OrchestratorClient
     --lifecycle             : Execute subtasks of type life cycle." . PHP_EOL . "
     --notifications         : Execute subtasks of type notifications." . PHP_EOL . "
     --reminder              : Execute subtasks of type reminder" . PHP_EOL . "
+    --automatic-groups      : Execute subtasks of type automatic group assignment" . PHP_EOL . "
     --activate              : Activate all due cyclic tasks." . PHP_EOL . "
     --remove                : Remove all completed sub-tasks." . PHP_EOL . "
     --log                   : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log)." . PHP_EOL . "
