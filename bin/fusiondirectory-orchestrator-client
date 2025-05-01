@@ -14,6 +14,7 @@ class OrchestratorClient
   private ?string $accessToken;
   private ?string $extractorPath;
   private ?string $auditType;
+  private ?string $automaticGroupsType; 
 
   public function __construct ()
   {
@@ -21,6 +22,7 @@ class OrchestratorClient
     $this->accessToken = NULL;
     $this->extractorPath = NULL;
     $this->auditType = NULL;
+    $this->automaticGroupsType = NULL; 
 
     // App details
     $this->verbose = FALSE;
@@ -203,6 +205,12 @@ class OrchestratorClient
       case 'automatic-groups':
         $ch = curl_init($this->automaticGroupsEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        
+        // Add automatic groups type as JSON data if provided
+        if ($this->automaticGroupsType !== NULL) {
+          $jsonData = json_encode(['type' => $this->automaticGroupsType]);
+          curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+        }
         break;
       case 'extractor':
         $endpoint = $this->extractorEndPoint;
@@ -303,6 +311,10 @@ class OrchestratorClient
           $tasksToBeExecuted[] = 'extractor';
           break;
         case '--automatic-groups':
+          if (isset($args[$index + 1]) && substr($args[$index + 1], 0, 1) !== "-") {
+            $this->automaticGroupsType = $args[$index + 1];
+            $skipNext = TRUE;
+          }
           $tasksToBeExecuted[] = 'automatic-groups';
           break;
         case '--log':
@@ -387,21 +399,21 @@ class OrchestratorClient
   private function printUsage ()
   {
     echo "Usage: fusiondirectory-orchestrator-client --args" . PHP_EOL . "
-    --help                  : Show this helper message." . PHP_EOL . "
-    --verbose               : Show curl returned messages." . PHP_EOL . "
-    --debug                 : Show debug and errors messages." . PHP_EOL . "
-    --emails                : Execute subtasks of type emails." . PHP_EOL . "
-    --lifecycle             : Execute subtasks of type life cycle." . PHP_EOL . "
-    --notifications         : Execute subtasks of type notifications." . PHP_EOL . "
-    --reminder              : Execute subtasks of type reminder" . PHP_EOL . "
-    --automatic-groups      : Execute subtasks of type automatic group assignment" . PHP_EOL . "
-    --activate              : Activate all due cyclic tasks." . PHP_EOL . "
-    --remove                : Remove all completed sub-tasks." . PHP_EOL . "
-    --log                   : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log)." . PHP_EOL . "
-    --audit [type]          : Manage audit logs with optional type (standard or syslog)" . PHP_EOL . "
-    --archive               : Execute subtasks of type archive" . PHP_EOL . "
-    --extractor [path]      : Execute subtasks of type extractor with optional path (Default is /srv/orchestrator/)." . PHP_EOL . "
-    --tasks                 : Show all tasks." . PHP_EOL;
+    --help                    : Show this helper message." . PHP_EOL . "
+    --verbose                 : Show curl returned messages." . PHP_EOL . "
+    --debug                   : Show debug and errors messages." . PHP_EOL . "
+    --emails                  : Execute subtasks of type emails." . PHP_EOL . "
+    --lifecycle               : Execute subtasks of type life cycle." . PHP_EOL . "
+    --notifications           : Execute subtasks of type notifications." . PHP_EOL . "
+    --reminder                : Execute subtasks of type reminder" . PHP_EOL . "
+    --automatic-groups [type] : Execute subtasks of type automatic group assignment with optional type (default or dynamic-group)" . PHP_EOL . "
+    --activate                : Activate all due cyclic tasks." . PHP_EOL . "
+    --remove                  : Remove all completed sub-tasks." . PHP_EOL . "
+    --log                     : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log)." . PHP_EOL . "
+    --audit [type]            : Manage audit logs with optional type (standard or syslog)" . PHP_EOL . "
+    --archive                 : Execute subtasks of type archive" . PHP_EOL . "
+    --extractor [path]        : Execute subtasks of type extractor with optional path (Default is /srv/orchestrator/)." . PHP_EOL . "
+    --tasks                   : Show all tasks." . PHP_EOL;
 
     exit;
   }
