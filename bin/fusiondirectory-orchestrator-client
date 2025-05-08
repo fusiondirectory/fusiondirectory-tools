@@ -31,7 +31,7 @@ class OrchestratorClient
     // App logging
     $this->logging = '/var/log/orchestrator/orchestrator.log';
 
-    $dotenv = Dotenv\Dotenv::create('/etc/fusiondirectory-orchestrator', 'orchestrator-client.conf');
+    $dotenv = Dotenv\Dotenv::create('/etc/fusiondirectory-tools', 'fusiondirectory-orchestrator-client.conf');
     $dotenv->overload();
 
     $this->listOfArguments = ['--help', '--verbose', '--debug', '--emails', '--tasks',
