@@ -2,7 +2,7 @@
 <?php
 
 declare(strict_types=1);
-require "/usr/share/fusiondirectory-orchestrator/config/bootstrap.php";
+require "/usr/share/php/Dotenv/autoload.php"; 
 
 class OrchestratorClient
 {
@@ -31,6 +31,9 @@ class OrchestratorClient
     // App logging
     $this->logging = '/var/log/orchestrator/orchestrator.log';
 
+    $dotenv = Dotenv\Dotenv::create('/etc/fusiondirectory-orchestrator', 'orchestrator-client.conf');
+    $dotenv->overload();
+
     $this->listOfArguments = ['--help', '--verbose', '--debug', '--emails', '--tasks',
       '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder', '--archive', '--extractor', '--automatic-groups'];
 
@@ -52,8 +55,8 @@ class OrchestratorClient
 
 
     $this->loginData = [
-      'username' => $_ENV["DSA_LOGIN"],
-      'password' => $_ENV["DSA_PASS"]
+      'username' => $_ENV["ORCHESTRATOR_LOGIN"],
+      'password' => $_ENV["ORCHESTRATOR_PASSWORD"]
     ];
   }
 
