@@ -69,7 +69,7 @@ class Setup extends Cli\LdapApplication
           'help'    => 'Checking FusionDirectory\'s config file',
           'command' => 'cmdCheckConfigFile',
         ],
-        'check-directories' => [
+        'check-directories:' => [
           'help'    => 'Checking FusionDirectory\'s directories',
           'command' => 'cmdCheckDirectories',
         ],
@@ -778,29 +778,43 @@ EOF;
 
   /**
    * Check FusionDirectory's directories
+   * $name name of the application
    */
-  protected function cmdCheckDirectories (): void
+  protected function cmdCheckDirectories (string $name): void
   {
     $apache_group = $this->getApacheGroup();
 
-    $root_config_dirs   = [
-      $this->vars['fd_home'],
-      $this->vars['fd_config_dir']
-    ];
-    $apache_config_dirs = [
-      $this->vars['fd_spool_dir'],
-      $this->vars['fd_cache'],
-      $this->vars['fd_cache'] . '/' . $this->vars['tmp_dir'],
-      $this->vars['fd_cache'] . '/' . $this->vars['fai_log_dir'],
-      $this->vars['fd_cache'] . '/' . $this->vars['template_dir'],
-    ];
+    if ($name == 'fusiondirectory') {
+        $root_config_dirs   = [
+          $this->vars['fd_home'],
+          $this->vars['fd_config_dir']
+        ];
+        $apache_config_dirs = [
+          $this->vars['fd_spool_dir'],
+          $this->vars['fd_log_dir'],
+          $this->vars['fd_cache'],
+          $this->vars['fd_cache'] . '/' . $this->vars['tmp_dir'],
+          $this->vars['fd_cache'] . '/' . $this->vars['fai_log_dir'],
+          $this->vars['fd_cache'] . '/' . $this->vars['template_dir'],
+        ];
 
-    foreach ($root_config_dirs as $dir) {
-      $this->checkRights($dir, 'root', 'root', 0755, TRUE);
-    }
+        foreach ($root_config_dirs as $dir) {
+          $this->checkRights($dir, 'root', 'root', 0755, TRUE);
+        }
 
-    foreach ($apache_config_dirs as $dir) {
-      $this->checkRights($dir, 'root', $apache_group, 0770, TRUE);
+        foreach ($apache_config_dirs as $dir) {
+          $this->checkRights($dir, 'root', $apache_group, 0770, TRUE);
+        }
+    } else if ($name == 'orchestrator') {
+        $apache_config_dirs = [
+          $this->vars['orchestrator_srv_dir'],
+        ];
+
+        foreach ($apache_config_dirs as $dir) {
+          $this->checkRights($dir, 'root', $apache_group, 0770, TRUE);
+        }
+    } else {
+      printf('Wrong name choose between "fusiondirectory" or "orchestrator"'  . "\n");
     }
   }
 
