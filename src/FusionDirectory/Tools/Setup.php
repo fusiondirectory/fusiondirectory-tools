@@ -806,15 +806,9 @@ EOF;
           $this->checkRights($dir, 'root', $apache_group, 0770, TRUE);
         }
     } else if ($name == 'orchestrator') {
-        $root_config_dirs   = [];
-
         $apache_config_dirs = [
           $this->vars['orchestrator_srv_dir'],
         ];
-
-        foreach ($root_config_dirs as $dir) {
-          $this->checkRights($dir, 'root', 'root', 0755, TRUE);
-        }
 
         foreach ($apache_config_dirs as $dir) {
           $this->checkRights($dir, 'root', $apache_group, 0770, TRUE);
