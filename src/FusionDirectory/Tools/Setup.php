@@ -872,10 +872,13 @@ EOF;
   {
     $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
 
-    $admin_add = "";
-    [$configdn, $config] = $this->readLdapConfiguration();
-    $userrdn  = ($config['fdUserRDN'][0] ?? '');
-    $grouprdn = ($config['fdOGroupRDN'][0] ?? '');
+    $admin_add            = "";
+    [$configdn, $config]  = $this->readLdapConfiguration();
+    $userrdn              = ($config['fdUserRDN'][0] ?? '');
+    $grouprdn             = ($config['fdOGroupRDN'][0] ?? '');
+    $tokenrdn             = ($config['fdTokenRDN'][0] ?? '');
+    $orchestratorrdn      = ($config['fdOrchestratorTokenRDN'][0] ?? '');
+    $recoveryrdn          = ($config['fdRecoveryTokenRDN'][0] ?? '');
 
     if ($userrdn !== '') {
       /* Collect existing people branches (even if main one may not exists) */
@@ -909,6 +912,36 @@ EOF;
 
       if ($this->askYnQuestion('Do you want to create it ?: ')) {
         $this->createBranch($grouprdn);
+      } else {
+        echo 'Skipping…' . "\n";
+      }
+    }
+
+    if (!$this->branchExists($tokenrdn . ',' . $this->base)) {
+      echo '! ' . $tokenrdn . ',' . $this->base . ' not found in your LDAP directory' . "\n";
+
+      if ($this->askYnQuestion('Do you want to create it ?: ')) {
+        $this->createBranch($tokenrdn);
+      } else {
+        echo 'Skipping…' . "\n";
+      }
+    }
+
+    if (!$this->branchExists($orchestratorrdn . ',' . $this->base)) {
+      echo '! ' . $orchestratorrdn . ',' . $this->base . ' not found in your LDAP directory' . "\n";
+
+      if ($this->askYnQuestion('Do you want to create it ?: ')) {
+        $this->createBranch($orchestratorrdn);
+      } else {
+        echo 'Skipping…' . "\n";
+      }
+    }
+
+    if (!$this->branchExists($recoveryrdn . ',' . $this->base)) {
+      echo '! ' . $recoveryrdn . ',' . $this->base . ' not found in your LDAP directory' . "\n";
+
+      if ($this->askYnQuestion('Do you want to create it ?: ')) {
+        $this->createBranch($recoveryrdn);
       } else {
         echo 'Skipping…' . "\n";
       }
