@@ -565,6 +565,12 @@ class PluginsManager extends Cli\LdapApplication
         throw new RuntimeException("Failed to unlink $file: " . var_export(error_get_last(), TRUE));
       } else {
         echo "unlink: $file" . PHP_EOL;
+        $directory = dirname($file);
+        if (!rmdir($directory)) {
+          throw new RuntimeException("Failed to rmdir $directory: " . var_export(error_get_last(), TRUE));
+        } else {
+          echo "rmdir: $directory" . PHP_EOL;
+        }
       }
     }
   }
