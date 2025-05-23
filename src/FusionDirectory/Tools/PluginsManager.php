@@ -543,6 +543,7 @@ class PluginsManager extends Cli\LdapApplication
       }
       // Finally delete the yaml file of the plugin.
       $this->removeFile($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
+      $this->removeEmptyDirectory(dirname($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml'));
     }
   }
 
@@ -565,12 +566,29 @@ class PluginsManager extends Cli\LdapApplication
         throw new RuntimeException("Failed to unlink $file: " . var_export(error_get_last(), TRUE));
       } else {
         echo "unlink: $file" . PHP_EOL;
-        $directory = dirname($file);
-        if (!rmdir($directory)) {
-          throw new RuntimeException("Failed to rmdir $directory: " . var_export(error_get_last(), TRUE));
-        } else {
-          echo "rmdir: $directory" . PHP_EOL;
-        }
+      }
+    }
+  }
+
+  // Remove empty directory
+
+  /**
+   * @throws \Exception
+   */
+  public function removeEmptyDirectory (string $directory): void
+  {
+    if (!is_dir($directory)) {
+      if ($this->getopt['debug']) {
+        throw new \Exception('Unable to rmdir : ' . $directory . ' it does not exist.');
+      } else {
+        echo "Unable to delete : " . $directory . " it does not exist" . PHP_EOL;
+        exit;
+      }
+    } else {
+      if (!rmdir($directory)) {
+        throw new RuntimeException("Failed to rmdir $directory: " . var_export(error_get_last(), TRUE));
+      } else {
+        echo "rmdir: $directory" . PHP_EOL;
       }
     }
   }
