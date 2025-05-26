@@ -291,12 +291,15 @@ class InsertSchema extends Cli\LdapApplication
       [$schemaPath, $schemaName, $list] = $this->gatherSchemaInformation($schema);
     } catch (Exception $e) {
       echo 'Search for schema failed: ' . $e->getMessage() . "\n";
+      exit;
     }
     if (($list->count() <= 0)) {
       echo 'Failed: Found no schema named ' . $schemaName . "\n";
+      exit;
     }
     if (($list->count() > 1)) {
       echo 'Failed: Several schemas found with name ' . $schemaName . "\n";
+      exit;
     }
     $list->rewind();
     $schemaDn    = $list->key();
