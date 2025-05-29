@@ -335,6 +335,9 @@ class Setup extends Cli\LdapApplication
    */
   protected function createBranch (string $ou): void
   {
+    if (!preg_match('/^ou=([^,]+),?.*?$/', $ou, $m)) {
+      throw new \Exception("Can’t create branch of unknown type $ou");
+    }
     if ($this->verbose()) {
       printf('Creating branch %s' . "\n", $ou . ',' . $this->base);
     }
