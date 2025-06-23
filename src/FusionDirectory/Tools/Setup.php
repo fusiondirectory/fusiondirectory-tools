@@ -193,7 +193,7 @@ class Setup extends Cli\LdapApplication
   protected function checkRights (string $dir, string $user, string $group, int $rights, bool $create): bool
   {
     if (file_exists($dir)) {
-      echo "$dir exists…\n";
+      echo "$dir exists\n";
       $lstat = lstat($dir);
       if ($lstat === FALSE) {
         throw new \Exception('Unable to read ' . $dir . ' permissions' . "\n");
