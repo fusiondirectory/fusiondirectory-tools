@@ -227,7 +227,7 @@ class PluginsManager extends Cli\LdapApplication
 
     // Check if name is set properly
     if (!isset($pluginInfo['information']['name'])) {
-      echo "name is not defined in " . $file . " properly" . PHP_EOL;
+      echo "name is not defined properly in the YAML" . PHP_EOL;
       exit;
     }
 
@@ -472,7 +472,7 @@ class PluginsManager extends Cli\LdapApplication
 
     // Check if name is set properly
     if (!isset($pluginInfo['information']['name'])) {
-      echo "name is not defined in " . $file . " properly" . PHP_EOL;
+      echo "name is not defined properly in the YAML" . PHP_EOL;
       exit;
     }
 
@@ -514,7 +514,7 @@ class PluginsManager extends Cli\LdapApplication
 
     // Check if origin is set properly
     if (!isset($pluginInfo['information']['origin'])) {
-      echo "origin is not defined in " . $file . " properly" . PHP_EOL;
+      echo "origin is not defined properly in the YAML" . PHP_EOL;
       exit;
     }
 
@@ -523,7 +523,7 @@ class PluginsManager extends Cli\LdapApplication
 
       // Check if fileList is set properly
       if (!is_array($pluginInfo['content']['fileList'])) {
-        echo "fileList is not defined in " . $file . " properly" . PHP_EOL;
+        echo "fileList is not defined properly in the YAML" . PHP_EOL;
         exit;
       }
 
