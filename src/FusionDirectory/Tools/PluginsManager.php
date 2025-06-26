@@ -225,6 +225,12 @@ class PluginsManager extends Cli\LdapApplication
     // Load Setup and Ldap objects and create branch pluginManager if required.
     $this->requirements();
 
+    // Check if name is set properly
+    if (!isset($pluginInfo['information']['name'])) {
+      echo "name is not defined properly in the YAML" . PHP_EOL;
+      exit;
+    }
+
     // Create the proper CN
     $pluginDN = "cn=" . $pluginInfo['information']['name'] . ",ou=pluginManager," . $this->conf['default']['base'];
 
@@ -464,6 +470,12 @@ class PluginsManager extends Cli\LdapApplication
     $this->addPluginRecord($pluginPath);
     $pluginInfo = $this->parseYamlFile($pluginPath);
 
+    // Check if name is set properly
+    if (!isset($pluginInfo['information']['name'])) {
+      echo "name is not defined properly in the YAML" . PHP_EOL;
+      exit;
+    }
+
     // If package do not install
     if ($pluginInfo['information']['origin'] !== 'package') {
       // YAML description must be saved within : /etc/fusiondirectory/yaml/plugin_name/description.yaml
@@ -500,8 +512,21 @@ class PluginsManager extends Cli\LdapApplication
 
     $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
 
+    // Check if origin is set properly
+    if (!isset($pluginInfo['information']['origin'])) {
+      echo "origin is not defined properly in the YAML" . PHP_EOL;
+      exit;
+    }
+
     // if origin = package, do not remove files.
     if ($pluginInfo['information']['origin'] !== 'package') {
+
+      // Check if fileList is set properly
+      if (!is_array($pluginInfo['content']['fileList'])) {
+        echo "fileList is not defined properly in the YAML" . PHP_EOL;
+        exit;
+      }
+
       foreach ($pluginInfo['content']['fileList'] as $file) {
 
         // Get the first dir from the path
