@@ -478,6 +478,13 @@ class PluginsManager extends Cli\LdapApplication
 
     // If package do not install
     if ($pluginInfo['information']['origin'] !== 'package') {
+
+      // Check if fileList is set properly
+      if (!is_array($pluginInfo['content']['fileList'])) {
+        echo "fileList is not defined properly in the YAML" . PHP_EOL;
+        exit;
+      }
+
       // YAML description must be saved within : /etc/fusiondirectory/yaml/plugin_name/description.yaml
       $this->copyDirectory($pluginPath->getPathname() . '/contrib/yaml', $this->vars['fd_config_dir'] . '/yaml/' . $pluginInfo['information']['name'] . '/');
       // Historical - retro compatibility
