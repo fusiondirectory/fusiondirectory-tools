@@ -466,8 +466,6 @@ class PluginsManager extends Cli\LdapApplication
    */
   public function copyPluginFiles (SplFileInfo $pluginPath): void
   {
-    // Register the plugins within LDAP
-    $this->addPluginRecord($pluginPath);
     $pluginInfo = $this->parseYamlFile($pluginPath);
 
     // Check if name is set properly
@@ -476,14 +474,17 @@ class PluginsManager extends Cli\LdapApplication
       exit;
     }
 
+    // Check if fileList is set properly
+    if (!is_array($pluginInfo['content']['fileList'])) {
+      echo "fileList is not defined properly in the YAML" . PHP_EOL;
+      exit;
+    }
+
+    // Register the plugins within LDAP
+    $this->addPluginRecord($pluginPath);
+
     // If package do not install
     if ($pluginInfo['information']['origin'] !== 'package') {
-
-      // Check if fileList is set properly
-      if (!is_array($pluginInfo['content']['fileList'])) {
-        echo "fileList is not defined properly in the YAML" . PHP_EOL;
-        exit;
-      }
 
       // YAML description must be saved within : /etc/fusiondirectory/yaml/plugin_name/description.yaml
       $this->copyDirectory($pluginPath->getPathname() . '/contrib/yaml', $this->vars['fd_config_dir'] . '/yaml/' . $pluginInfo['information']['name'] . '/');
@@ -514,9 +515,6 @@ class PluginsManager extends Cli\LdapApplication
    */
   public function removePlugin (string $pluginName)
   {
-    $this->requirements();
-    $this->deletePluginRecord($pluginName);
-
     $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
 
     // Check if origin is set properly
@@ -525,14 +523,17 @@ class PluginsManager extends Cli\LdapApplication
       exit;
     }
 
+    // Check if fileList is set properly
+    if (!is_array($pluginInfo['content']['fileList'])) {
+      echo "fileList is not defined properly in the YAML" . PHP_EOL;
+      exit;
+    }
+
+    $this->requirements();
+    $this->deletePluginRecord($pluginName);
+
     // if origin = package, do not remove files.
     if ($pluginInfo['information']['origin'] !== 'package') {
-
-      // Check if fileList is set properly
-      if (!is_array($pluginInfo['content']['fileList'])) {
-        echo "fileList is not defined properly in the YAML" . PHP_EOL;
-        exit;
-      }
 
       foreach ($pluginInfo['content']['fileList'] as $file) {
 
