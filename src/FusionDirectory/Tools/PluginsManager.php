@@ -515,7 +515,7 @@ class PluginsManager extends Cli\LdapApplication
    */
   public function removePlugin (string $pluginName)
   {
-    $pluginInfo = yaml_parse_file($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
+    $pluginInfo = $this->parseYamlFile($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
 
     // Check if origin is set properly
     if (!isset($pluginInfo['information']['origin'])) {
