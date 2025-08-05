@@ -499,7 +499,7 @@ class PluginsManager extends Cli\LdapApplication
       $this->copyDirectory($pluginPath->getPathname() . '/html', $this->vars['fd_home'] . '/html');
       $this->copyDirectory($pluginPath->getPathname() . '/ihtml', $this->vars['fd_home'] . '/ihtml');
       $this->copyDirectory($pluginPath->getPathname() . '/include', $this->vars['fd_home'] . '/include');
-      $this->copyDirectory($pluginPath->getPathname() . '/contrib/openldap', $this->vars['fd_home'] . '/contrib/openldap');
+      $this->copyDirectory($pluginPath->getPathname() . '/contrib/openldap', $this->vars['fd_schema_dir']);
       $this->copyDirectory($pluginPath->getPathname() . '/contrib/etc', $this->vars['fd_config_dir'] . '/' . $pluginInfo['information']['name']);
       $this->copyDirectory($pluginPath->getPathname() . '/locale', $this->vars['fd_home'] . '/locale/plugins/' . $pluginInfo['information']['name'] . '/locale');
       $this->copyDirectory($pluginPath->getPathname() . '/export', $this->vars['fd_home'] . '/plugins/export');
