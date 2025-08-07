@@ -123,15 +123,35 @@ class OrchestratorClient
       // Check if token retrieval was successful
       if (!is_object($tokens) || !isset($tokens->access_token)) {
         $errorCode = '';
+        $errorMessage = '';
+        
+        // Check if it's a JSON error response with authentication issues
+        if (is_object($tokens) && isset($tokens->message)) {
+          $responseMessage = strtolower($tokens->message);
+          
+          // Check for credential-related errors in the response message
+          if (strpos($responseMessage, 'invalid credentials') !== false || 
+              strpos($responseMessage, 'unable to bind') !== false || 
+              strpos($responseMessage, 'authentication failed') !== false) {
+            $errorMessage = 'Authentication failed: Invalid username or password for orchestrator.';
+          } else {
+            // Include the actual error message in our output
+            $errorMessage = 'Authentication error: ' . $tokens->message;
+          }
+        } 
         // Extract error code from response if it's an HTML error page
-        if (is_string($tokens) && strpos($tokens, '<!DOCTYPE HTML') !== false) {
+        else if (is_string($tokens) && strpos($tokens, '<!DOCTYPE HTML') !== false) {
           preg_match('/<title>(\d+)[^<]*<\/title>/', $tokens, $matches);
           if (!empty($matches[1])) {
             $errorCode = ' (Error code: ' . $matches[1] . ')';
           }
+          $errorMessage = 'The access token could not be retrieved, potentially the URL endpoint for orchestrator is wrong' . $errorCode . '.';
+        } 
+        // Default error message
+        else {
+          $errorMessage = 'The access token could not be retrieved. Please check orchestrator URL and credentials.';
         }
         
-        $errorMessage = 'The access token could not be retrieved, potentially the URL endpoint for orchestrator is wrong' . $errorCode . '.';
         echo $errorMessage . PHP_EOL;
         $this->logToFile($errorMessage);
         exit(1);
