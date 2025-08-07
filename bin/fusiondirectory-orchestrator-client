@@ -119,6 +119,23 @@ class OrchestratorClient
       $tokens = $this->getAccessToken();
       // Create an object from the JSON string received.
       $tokens = json_decode($tokens);
+      
+      // Check if token retrieval was successful
+      if (!is_object($tokens) || !isset($tokens->access_token)) {
+        $errorCode = '';
+        // Extract error code from response if it's an HTML error page
+        if (is_string($tokens) && strpos($tokens, '<!DOCTYPE HTML') !== false) {
+          preg_match('/<title>(\d+)[^<]*<\/title>/', $tokens, $matches);
+          if (!empty($matches[1])) {
+            $errorCode = ' (Error code: ' . $matches[1] . ')';
+          }
+        }
+        
+        $errorMessage = 'The access token could not be retrieved, potentially the URL endpoint for orchestrator is wrong' . $errorCode . '.';
+        echo $errorMessage . PHP_EOL;
+        $this->logToFile($errorMessage);
+        exit(1);
+      }
 
       $this->accessToken = $tokens->access_token;
     }
@@ -139,7 +156,19 @@ class OrchestratorClient
     curl_setopt($ch, CURLOPT_HTTPGET, TRUE);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
-    curl_exec($ch);
+    $result = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    
+    // Check if we got a successful response
+    if ($httpCode != 200) {
+      $errorMessage = "Failed to retrieve tasks. Server returned HTTP code: $httpCode";
+      echo $errorMessage . PHP_EOL;
+      $this->logToFile($errorMessage);
+      $this->showCurlDetails($ch);
+      curl_close($ch);
+      return;
+    }
+    
     $tasks = json_decode(curl_multi_getcontent($ch), TRUE);
 
     unset($tasks['count']);
@@ -236,7 +265,16 @@ class OrchestratorClient
     if (!empty($ch)) {
       curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
       curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-      curl_exec($ch);
+      $result = curl_exec($ch);
+      $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+      
+      // Check if we got a successful response
+      if ($httpCode < 200 || $httpCode >= 300) {
+        $errorMessage = "Operation failed for $taskType task. Server returned HTTP code: $httpCode";
+        echo $errorMessage . PHP_EOL;
+        $this->logToFile($errorMessage);
+      }
+      
       $this->showCurlDetails($ch);
       curl_close($ch);
     }
