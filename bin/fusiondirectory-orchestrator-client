@@ -130,12 +130,9 @@ class OrchestratorClient
           $responseMessage = strtolower($tokens->message);
           
           // Check for credential-related errors in the response message
-          if (strpos($responseMessage, 'invalid credentials') !== false || 
-              strpos($responseMessage, 'unable to bind') !== false || 
-              strpos($responseMessage, 'authentication failed') !== false) {
+          if (strpos($responseMessage, 'invalid credentials') !== false || strpos($responseMessage, 'unable to bind') !== false) {
             $errorMessage = 'Authentication failed: Invalid username or password for orchestrator.';
           } else {
-            // Include the actual error message in our output
             $errorMessage = 'Authentication error: ' . $tokens->message;
           }
         } 
