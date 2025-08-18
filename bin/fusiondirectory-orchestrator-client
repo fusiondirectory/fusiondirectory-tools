@@ -10,11 +10,13 @@ class OrchestratorClient
   private string $loginEndPoint, $emailEndPoint, $tasksEndPoint, $lifeCycleEndPoint, $logging,
     $removeSubTasksEndPoint, $notificationsEndPoint, $archiveEndPoint, $automaticGroupsEndPoint;
   private string $activateCyclicTasksEndPoint, $extractorEndPoint;
+  private string $restartFailedTasksEndPoint; // new endpoint for restarting failed subtasks
   private array $loginData, $listOfArguments;
   private ?string $accessToken;
   private ?string $extractorPath;
   private ?string $auditType;
   private ?string $automaticGroupsType; 
+  private ?string $restartFailedTaskName; // optional task name to scope restart
 
   public function __construct ()
   {
@@ -23,6 +25,7 @@ class OrchestratorClient
     $this->extractorPath = NULL;
     $this->auditType = NULL;
     $this->automaticGroupsType = NULL; 
+    $this->restartFailedTaskName = NULL; // init
 
     // App details
     $this->verbose = FALSE;
@@ -35,7 +38,8 @@ class OrchestratorClient
     $dotenv->overload();
 
     $this->listOfArguments = ['--help', '--verbose', '--debug', '--emails', '--tasks',
-      '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder', '--archive', '--extractor', '--automatic-groups'];
+      '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder', '--archive', '--extractor', '--automatic-groups',
+      '--restart-failed-tasks'];
 
     $orchestratorFQDN        = $_ENV["ORCHESTRATOR_API_URL"];
     $this->loginEndPoint     = $orchestratorFQDN . '/api/login';
@@ -52,6 +56,8 @@ class OrchestratorClient
     $this->removeSubTasksEndPoint = $this->tasksEndPoint . 'removeSubTasks';
     // Only activate required cyclic tasks
     $this->activateCyclicTasksEndPoint = $this->tasksEndPoint . 'activateCyclicTasks';
+    // Restart failed subtasks (optionally limited to a main task)
+    $this->restartFailedTasksEndPoint = $this->tasksEndPoint . 'restartFailedTasks';
 
 
     $this->loginData = [
@@ -229,6 +235,14 @@ class OrchestratorClient
         $ch = curl_init($this->activateCyclicTasksEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
+      case 'restart-failed-tasks':
+        $ch = curl_init($this->restartFailedTasksEndPoint);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        if ($this->restartFailedTaskName !== NULL) {
+          $jsonData = json_encode(['taskName' => $this->restartFailedTaskName]);
+          curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+        }
+        break;
       case 'notifications':
         $ch = curl_init($this->notificationsEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
@@ -348,6 +362,13 @@ class OrchestratorClient
         case '--activate':
           $tasksToBeExecuted[] = 'activate';
           break;
+        case '--restart-failed-tasks':
+          if (isset($args[$index + 1]) && substr($args[$index + 1], 0, 1) !== "-") {
+            $this->restartFailedTaskName = $args[$index + 1];
+            $skipNext = TRUE;
+          }
+          $tasksToBeExecuted[] = 'restart-failed-tasks';
+          break;
         case '--reminder':
           $tasksToBeExecuted[] = 'reminder';
           break;
@@ -409,6 +430,9 @@ class OrchestratorClient
         case 'activate' :
           $this->subTaskExec('activate');
           break;
+        case 'restart-failed-tasks':
+          $this->subTaskExec('restart-failed-tasks');
+          break;
         case 'notifications' :
           $this->subTaskExec('notifications');
           break;
@@ -457,21 +481,22 @@ class OrchestratorClient
   private function printUsage ()
   {
     echo "Usage: fusiondirectory-orchestrator-client --args" . PHP_EOL . "
-    --help                    : Show this helper message." . PHP_EOL . "
-    --verbose                 : Show curl returned messages." . PHP_EOL . "
-    --debug                   : Show debug and errors messages." . PHP_EOL . "
-    --emails                  : Execute subtasks of type emails." . PHP_EOL . "
-    --lifecycle               : Execute subtasks of type life cycle." . PHP_EOL . "
-    --notifications           : Execute subtasks of type notifications." . PHP_EOL . "
-    --reminder                : Execute subtasks of type reminder" . PHP_EOL . "
-    --automatic-groups [type] : Execute subtasks of type automatic group assignment with optional type (default or dynamic-group)" . PHP_EOL . "
-    --activate                : Activate all due cyclic tasks." . PHP_EOL . "
-    --remove                  : Remove all completed sub-tasks." . PHP_EOL . "
-    --log                     : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log)." . PHP_EOL . "
-    --audit [type]            : Manage audit logs with optional type (standard or syslog)" . PHP_EOL . "
-    --archive                 : Execute subtasks of type archive" . PHP_EOL . "
-    --extractor [path]        : Execute subtasks of type extractor with optional path (Default is /srv/orchestrator/)." . PHP_EOL . "
-    --tasks                   : Show all tasks." . PHP_EOL;
+    --help                        : Show this helper message." . PHP_EOL . "
+    --verbose                     : Show curl returned messages." . PHP_EOL . "
+    --debug                       : Show debug and errors messages." . PHP_EOL . "
+    --emails                      : Execute subtasks of type emails." . PHP_EOL . "
+    --lifecycle                   : Execute subtasks of type life cycle." . PHP_EOL . "
+    --notifications               : Execute subtasks of type notifications." . PHP_EOL . "
+    --reminder                    : Execute subtasks of type reminder" . PHP_EOL . "
+    --automatic-groups [type]     : Execute subtasks of type automatic group assignment with optional type (default or dynamic-group)" . PHP_EOL . "
+    --activate                    : Activate all due cyclic tasks." . PHP_EOL . "
+    --restart-failed-tasks [name] : Restart failed subtasks. Optionally limit to a main task by name." . PHP_EOL . "
+    --remove                      : Remove all completed sub-tasks." . PHP_EOL . "
+    --log                         : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log)." . PHP_EOL . "
+    --audit [type]                : Manage audit logs with optional type (standard or syslog)" . PHP_EOL . "
+    --archive                     : Execute subtasks of type archive" . PHP_EOL . "
+    --extractor [path]            : Execute subtasks of type extractor with optional path (Default is /srv/orchestrator/)." . PHP_EOL . "
+    --tasks                       : Show all tasks." . PHP_EOL;
 
     exit;
   }
