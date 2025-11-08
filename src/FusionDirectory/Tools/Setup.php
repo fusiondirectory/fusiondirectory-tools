@@ -307,6 +307,9 @@ class Setup extends Cli\LdapApplication
    */
   public function branchExists (string $dn): bool
   {
+    if (!preg_match('/^(cn|ou)=([^,]+),?.*?$/', $dn, $m)) {
+      throw new \Exception("We cannot find some entries in your FusionDirectory configuration. Please open it and save it. Exiting.");
+    }
     try {
       /* Search for branch */
       $branchList = $this->ldap->search($dn, '(objectClass=*)', [], 'base');
@@ -335,7 +338,7 @@ class Setup extends Cli\LdapApplication
    */
   protected function createBranch (string $ou): void
   {
-    if (!preg_match('/^ou=([^,]+),?.*?$/', $ou, $m)) {
+    if (!preg_match('/^(cn|ou)=([^,]+),?.*?$/', $ou, $m)) {
       throw new \Exception("Can’t create branch of unknown type $ou");
     }
     if ($this->verbose()) {
