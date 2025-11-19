@@ -50,6 +50,10 @@ class Migration extends Cli\LdapApplication
           'help'    => 'Migrating your users',
           'command' => 'cmdMigrateUsers',
         ],
+        'migrate-supannobjects'      => [
+          'help'    => 'Migrating your Supann Objects',
+          'command' => 'cmdMigrateSupannObjects',
+        ],
         'check-ids'          => [
           'help'    => 'Checking for duplicated uid or gid numbers',
           'command' => 'cmdCheckIds',
@@ -364,6 +368,76 @@ class Migration extends Cli\LdapApplication
             $result->assert();
           } catch (Exception $e) {
             echo 'Failed to modify entry "' . $dn . '": ' . $e->getMessage() . "\n";
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Migrate SupannObjects
+   * @throws Exception
+   */
+  protected function cmdMigrateSupannObjects (): void
+  {
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception | SodiumException $e) {
+    }
+
+    if ($this->verbose()) {
+      printf('Searching for SupannObjects to be migrate' . "\n");
+    }
+    $list = $this->ldap->search(
+      'cn=config,ou=fusiondirectory,' . $this->base,
+      '(&' .
+      '(|' .
+      '(fdSupannRessourceLabels=*)' .
+      '(fdSupannRessourceSubStates=*)' .
+      ')' .
+      ')',
+      ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates']
+    );
+    $list->assert();
+
+    if ($list->count() > 0) {
+      if ($this->askYnQuestion('Do you want to migrate the SupannObjects?')) {
+        foreach ($list as $dn => $entries) {
+          foreach ($entries as $key => $values) {
+            foreach ($values as $i => $entry) {
+              try {
+                if ($key == 'fdSupannRessourceSubStates') {
+                  $substate = explode(':', $entry)[2];
+
+                  $dn    = 'fdSupannSubStateName=' . $substate .',ou=substates,ou=supannobjects,' . $this->base;
+                  $attrs = [
+                    'objectClass'            => 'fdSupannRessourceSubState',
+                    'fdSupannSubStateName'   => $substate,
+                    'fdSupannRessourceLabel' => $substate,
+                  ];
+                } else {
+                  $resource = explode(':', $entry)[0];
+                  $label    = explode(':', $entry)[1];
+
+                  $dn    = 'fdSupannRessourceName=' . $resource .',ou=ressources,ou=supannobjects,' . $this->base;
+                  $attrs = [
+                    'objectClass'            => 'fdSupannRessource',
+                    'fdSupannRessourceName'  => $resource,
+                    'fdSupannRessourceLabel' => $label,
+                  ];
+                }
+                $result = $this->ldap->add($dn, $attrs);
+                $result->assert();
+              } catch (Exception $e) {
+                echo 'Failed to add entry "' . $entry . '": ' . $e->getMessage() . "\n";
+              }
+            }
+          }
+          try {
+            $result = $this->ldap->mod_del('cn=config,ou=fusiondirectory,' . $this->base, $entries);
+            $result->assert();
+          } catch (Exception $e) {
+            echo 'Failed to delete the SupannObjects entries: ' . $e->getMessage() . "\n";
           }
         }
       }
