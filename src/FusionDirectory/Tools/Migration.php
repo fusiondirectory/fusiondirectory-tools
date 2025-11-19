@@ -437,7 +437,7 @@ class Migration extends Cli\LdapApplication
             $result = $this->ldap->mod_del('cn=config,ou=fusiondirectory,' . $this->base, $entries);
             $result->assert();
           } catch (Exception $e) {
-            echo 'Failed to delete entry "' . $entries . '": ' . $e->getMessage() . "\n";
+            echo 'Failed to delete the SupannObjects entries: ' . $e->getMessage() . "\n";
           }
         }
       }
