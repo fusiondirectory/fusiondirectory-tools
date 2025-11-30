@@ -402,8 +402,8 @@ class Migration extends Cli\LdapApplication
       );
       $list->assert();
 
-      $ou     = 'ou=supannobjects';
-      $ouName = 'supannobjects'
+      $ou        = 'ou=supannobjects';
+      $ouName    = 'supannobjects';
       $branchAdd = $this->ldap->add(
         $ou . ',' . $this->base,
         [
@@ -413,8 +413,8 @@ class Migration extends Cli\LdapApplication
       );
       $branchAdd->assert();
 
-      $ou     = 'ou=ressources,ou=supannobjects';
-      $ouName = 'ressources'
+      $ou        = 'ou=ressources,ou=supannobjects';
+      $ouName    = 'ressources';
       $branchAdd = $this->ldap->add(
         $ou . ',' . $this->base,
         [
@@ -424,8 +424,8 @@ class Migration extends Cli\LdapApplication
       );
       $branchAdd->assert();
 
-      $ou     = 'ou=states,ou=supannobjects';
-      $ouName = 'states'
+      $ou        = 'ou=states,ou=supannobjects';
+      $ouName    = 'states';
       $branchAdd = $this->ldap->add(
         $ou . ',' . $this->base,
         [
@@ -435,8 +435,8 @@ class Migration extends Cli\LdapApplication
       );
       $branchAdd->assert();
 
-      $ou     = 'ou=substates,ou=supannobjects';
-      $ouName = 'substates'
+      $ou        = 'ou=substates,ou=supannobjects';
+      $ouName    = 'substates';
       $branchAdd = $this->ldap->add(
         $ou . ',' . $this->base,
         [
