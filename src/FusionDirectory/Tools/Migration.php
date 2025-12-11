@@ -402,6 +402,50 @@ class Migration extends Cli\LdapApplication
       );
       $list->assert();
 
+      $ou        = 'ou=supannobjects';
+      $ouName    = 'supannobjects';
+      $branchAdd = $this->ldap->add(
+        $ou . ',' . $this->base,
+        [
+          'ou'          => $ouName,
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+      $branchAdd->assert();
+
+      $ou        = 'ou=ressources,ou=supannobjects';
+      $ouName    = 'ressources';
+      $branchAdd = $this->ldap->add(
+        $ou . ',' . $this->base,
+        [
+          'ou'          => $ouName,
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+      $branchAdd->assert();
+
+      $ou        = 'ou=states,ou=supannobjects';
+      $ouName    = 'states';
+      $branchAdd = $this->ldap->add(
+        $ou . ',' . $this->base,
+        [
+          'ou'          => $ouName,
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+      $branchAdd->assert();
+
+      $ou        = 'ou=substates,ou=supannobjects';
+      $ouName    = 'substates';
+      $branchAdd = $this->ldap->add(
+        $ou . ',' . $this->base,
+        [
+          'ou'          => $ouName,
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+      $branchAdd->assert();
+
       if ($list->count() > 0) {
         if ($this->askYnQuestion('Do you want to migrate the SupannObjects?')) {
           foreach ($list as $dn => $entries) {
@@ -437,6 +481,14 @@ class Migration extends Cli\LdapApplication
             }
             try {
               $result = $this->ldap->mod_del('cn=config,ou=fusiondirectory,' . $this->base, $entries);
+              $result->assert();
+
+              $result = $this->ldap->mod_add('cn=config,ou=fusiondirectory,' . $this->base, [
+                "fdSupannObjectsRDN"   => "ou=supannobjects",
+                "fdSupannRessourceRDN" => "ou=ressources,ou=supannobjects",
+                "fdSupannStateRDN"     => "ou=states,ou=supannobjects",
+                "fdSupannSubStateRDN"  => "ou=substates,ou=supannobjects"
+              ]);
               $result->assert();
             } catch (Exception $e) {
               echo 'Failed to delete the SupannObjects entries: ' . $e->getMessage() . "\n";
