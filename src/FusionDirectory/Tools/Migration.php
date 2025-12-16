@@ -396,14 +396,17 @@ class Migration extends Cli\LdapApplication
         '(|' .
         '(fdSupannRessourceLabels=*)' .
         '(fdSupannRessourceSubStates=*)' .
+        '(fdSupannRessourceSubStatesLabels=*)' .
         ')' .
         ')',
-        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates']
+        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates', 'fdSupannRessourceSubStatesLabels']
       );
       $list->assert();
+      echo 'SupannObjects entries found in configuration' . "\n";
 
       $ou        = 'ou=supannobjects';
       $ouName    = 'supannobjects';
+      echo 'Create ou=supannobjects branch' . "\n";
       $branchAdd = $this->ldap->add(
         $ou . ',' . $this->base,
         [
@@ -415,6 +418,7 @@ class Migration extends Cli\LdapApplication
 
       $ou        = 'ou=ressources,ou=supannobjects';
       $ouName    = 'ressources';
+      echo 'Create ou=ressources,ou=supannobjects branch' . "\n";
       $branchAdd = $this->ldap->add(
         $ou . ',' . $this->base,
         [
@@ -426,6 +430,7 @@ class Migration extends Cli\LdapApplication
 
       $ou        = 'ou=states,ou=supannobjects';
       $ouName    = 'states';
+      echo 'Create ou=states,ou=supannobjects branch' . "\n";
       $branchAdd = $this->ldap->add(
         $ou . ',' . $this->base,
         [
@@ -437,6 +442,7 @@ class Migration extends Cli\LdapApplication
 
       $ou        = 'ou=substates,ou=supannobjects';
       $ouName    = 'substates';
+      echo 'Create ou=substates,ou=supannobjects branch' . "\n";
       $branchAdd = $this->ldap->add(
         $ou . ',' . $this->base,
         [
@@ -446,6 +452,78 @@ class Migration extends Cli\LdapApplication
       );
       $branchAdd->assert();
 
+      // Add COMPTE and MAIL ressource
+      $mainRessources = [
+        "COMPTE" => "Compte",
+        "MAIL"   => "Mail"
+      ];
+
+      foreach ($mainRessources as $resource => $label) {
+        $dn    = 'fdSupannRessourceName=' . $resource .',ou=ressources,ou=supannobjects,' . $this->base;
+        echo 'Adding ressource ' . $dn . "\n";
+        $attrs = [
+          'objectClass'            => 'fdSupannRessource',
+          'fdSupannRessourceName'  => $resource,
+          'fdSupannRessourceLabel' => $label,
+        ];
+        $result = $this->ldap->add($dn, $attrs);
+        $result->assert();
+      }
+
+      // Add default states
+      $mainStates = [
+        "A" => "Active",
+        "I" => "Inactive",
+        "S" => "Suspendu"
+      ];
+
+      foreach ($mainStates as $state => $label) {
+        $dn    = 'fdSupannStateName=' . $state .',ou=states,ou=supannobjects,' . $this->base;
+        echo 'Adding states ' . $dn . "\n";
+        $attrs = [
+          'objectClass'            => 'fdSupannRessourceState',
+          'fdSupannStateName'      => $state,
+          'fdSupannRessourceLabel' => $label,
+        ];
+        $result = $this->ldap->add($dn, $attrs);
+        $result->assert();
+      }
+
+      // Label array for matching substate and label
+      $substateLabels = [
+        "SupannAnticipe"            => "Anticipé",
+        "SupannActif"               => "Active",
+        "SupannSursis"              => "Sursis",
+        "SupannPrecree"             => "Pré-créé",
+        "SupannCree"                => "Créé",
+        "SupannExpire"              => "Expiré",
+        "SupannInactif"             => "Inactif",
+        "SupannSupprDonnees"        => "Suppression des données",
+        "SupannSupprCompte"         => "Supression définitive",
+        "SupannVerrouille"          => "Verrouillé",
+        "SupannVerrouAdministratif" => "Verouillage administratif",
+        "SupannVerrouTechnique"     => "Verouillage technique"
+      ];
+
+      // Complete the substateLabels with fdSupannRessourceSubStatesLabels
+      echo 'Complete substateLabels with fdSupannRessourceSubStatesLabels' . "\n";
+      if ($list->count() > 0) {
+        foreach ($list as $dn => $entries) {
+          foreach ($entries as $key => $values) {
+            foreach ($values as $i => $entry) {
+              if ($key == 'fdSupannRessourceSubStatesLabels') {
+                $substate = explode(':', $entry)[0];
+                $label    = explode(':', $entry)[1];
+
+                // Add $substate => $label
+                echo 'Add substate "' . $substate . '" => "' . $label . '" to substateLabels' . "\n";
+                $substateLabels += [ $substate => $label ];
+              }
+            }
+          }
+        }
+      }
+
       if ($list->count() > 0) {
         if ($this->askYnQuestion('Do you want to migrate the SupannObjects?')) {
           foreach ($list as $dn => $entries) {
@@ -453,15 +531,38 @@ class Migration extends Cli\LdapApplication
               foreach ($values as $i => $entry) {
                 try {
                   if ($key == 'fdSupannRessourceSubStates') {
+                    $state    = explode(':', $entry)[1];
                     $substate = explode(':', $entry)[2];
 
+                    // Get the defined label if it exists
+                    echo 'Search substate label for "' . $substate . '"' . "\n";
+                    if (isset($substateLabels[$substate])) {
+                      $substateLabel = $substateLabels[$substate];
+                      echo 'Label for "' . $substate . '" = "' . $substateLabel . '"' . "\n";
+                    } else {
+                      $substateLabel = $substate;
+                      echo 'Label for "' . $substate . '" = "' . $substateLabel . '"' . "\n";
+                    }
+
                     $dn    = 'fdSupannSubStateName=' . $substate .',ou=substates,ou=supannobjects,' . $this->base;
+                    echo 'Adding substate ' . $dn . "\n";
                     $attrs = [
                       'objectClass'            => 'fdSupannRessourceSubState',
                       'fdSupannSubStateName'   => $substate,
-                      'fdSupannRessourceLabel' => $substate,
+                      'fdSupannRessourceLabel' => $substateLabel,
                     ];
-                  } else {
+
+                    $result = $this->ldap->add($dn, $attrs);
+                    $result->assert();
+
+                    // Add substate to the correct state
+                    $dnState = 'fdSupannStateName=' . $state .',ou=states,ou=supannobjects,' . $this->base;
+                    echo 'Link substate ' . $dn . ' to state ' . $dnState . "\n";
+                    $result = $this->ldap->mod_add($dnState, [
+                      "fdSupannSubStateList" => $dn
+                    ]);
+                    $result->assert();
+                  } else if ($key == 'fdSupannRessourceLabels') {
                     $resource = explode(':', $entry)[0];
                     $label    = explode(':', $entry)[1];
 
@@ -471,18 +572,21 @@ class Migration extends Cli\LdapApplication
                       'fdSupannRessourceName'  => $resource,
                       'fdSupannRessourceLabel' => $label,
                     ];
+                    echo 'Adding ressource ' . $dn . "\n";
+                    $result = $this->ldap->add($dn, $attrs);
+                    $result->assert();
                   }
-                  $result = $this->ldap->add($dn, $attrs);
-                  $result->assert();
                 } catch (Exception $e) {
                   echo 'Failed to add entry "' . $entry . '": ' . $e->getMessage() . "\n";
                 }
               }
             }
             try {
+              echo 'Delete supannObjects from configuration' . "\n";
               $result = $this->ldap->mod_del('cn=config,ou=fusiondirectory,' . $this->base, $entries);
               $result->assert();
 
+              echo 'Add supannObjects RDN to configuration' . "\n";
               $result = $this->ldap->mod_add('cn=config,ou=fusiondirectory,' . $this->base, [
                 "fdSupannObjectsRDN"   => "ou=supannobjects",
                 "fdSupannRessourceRDN" => "ou=ressources,ou=supannobjects",
