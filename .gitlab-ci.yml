@@ -79,15 +79,8 @@ build-release:
 trigger-ci-debian-bullseye:
   stage: trigger
   only:
-    - dev
+    - php8
   trigger:
     project: debian/bullseye-fusiondirectory-tools-dev
-    branch: "main"
+    branch: "php8"
 
-trigger-ci-ubuntu-focal:
-  stage: trigger
-  only:
-    - dev
-  trigger:
-    project: ubuntu/focal-fusiondirectory-tools-dev
-    branch: "main"
