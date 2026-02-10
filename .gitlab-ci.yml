@@ -51,7 +51,7 @@ create_phpstan_rapport:
 build-tarballs:
   stage: tarballs
   only:
-    - dev
+    - php8
   script:
     - mkdir ../fusiondirectory-tools-$VERSION/
     - mv ./* ../fusiondirectory-tools-$VERSION/
