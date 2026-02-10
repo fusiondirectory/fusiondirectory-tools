@@ -646,7 +646,7 @@ class PluginsManager extends Cli\LdapApplication
       $plugins[] = $match[1];
     }
 
-    if (isset($count) && count($count) !== 0) {
+    if (isset($count)) {
       echo "Number of plugins installed : " . count($count) . PHP_EOL;
       if (isset($plugins)) {
         foreach ($plugins as $plugin) {
