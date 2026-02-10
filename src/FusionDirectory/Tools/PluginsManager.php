@@ -443,7 +443,7 @@ class PluginsManager extends Cli\LdapApplication
     }
 
     // Copy files if destination plugin folder only contains one plugin.
-    if ($lonePlugin === TRUE) {
+    if (!empty($lonePlugin)) {
       $this->copyPluginFiles($path);
       // Manage multiple plugins installation.
     } else {
