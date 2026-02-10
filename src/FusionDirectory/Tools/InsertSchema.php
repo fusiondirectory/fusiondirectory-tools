@@ -199,7 +199,7 @@ class InsertSchema extends Cli\LdapApplication
   /**
    * @throws Exception
    */
-  protected function searchForSchemas (string $schemaSearch = NULL): Ldap\Result
+  protected function searchForSchemas (?string $schemaSearch = NULL): Ldap\Result
   {
     if ($schemaSearch !== NULL) {
       $filter = '(&(objectClass=olcSchemaConfig)(cn={*}' . ldap_escape($schemaSearch, '', LDAP_ESCAPE_FILTER) . '))';
@@ -216,7 +216,7 @@ class InsertSchema extends Cli\LdapApplication
     return $list;
   }
 
-  protected function listSchemas (string $schemaSearch = NULL): void
+  protected function listSchemas (?string $schemaSearch = NULL): void
   {
     try {
       $list = $this->searchForSchemas($schemaSearch);
