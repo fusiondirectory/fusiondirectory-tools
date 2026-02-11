@@ -345,10 +345,6 @@ class InsertSchema extends Cli\LdapApplication
     }
 
     $list  = $this->searchForSchemas($name);
-    $count = $list->count();
-    if ($count == 0) {
-      throw new \Exception('Count returned ' . $count);
-    }
     return [$path, $name, $list];
   }
 
