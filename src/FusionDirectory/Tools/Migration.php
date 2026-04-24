@@ -397,9 +397,10 @@ class Migration extends Cli\LdapApplication
         '(fdSupannRessourceLabels=*)' .
         '(fdSupannRessourceSubStates=*)' .
         '(fdSupannRessourceSubStatesLabels=*)' .
+        '(fdSupannCiviliteValues=*)' .
         ')' .
         ')',
-        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates', 'fdSupannRessourceSubStatesLabels']
+        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates', 'fdSupannRessourceSubStatesLabels', 'fdSupannCiviliteValues']
       );
       $list->assert();
       echo 'SupannObjects entries found in configuration' . "\n";
@@ -575,6 +576,19 @@ class Migration extends Cli\LdapApplication
                     echo 'Adding ressource ' . $dn . "\n";
                     $result = $this->ldap->add($dn, $attrs);
                     $result->assert();
+                  } else if ($key == 'fdSupannCiviliteValues') {
+                    $name  = $entry;
+                    $label = $entry;
+
+                    $dn    = 'fdSupannCiviliteName=' . $name .',ou=ressources,ou=civilite,' . $this->base;
+                    $attrs = [
+                      'objectClass'            => 'fdSupannCivilite',
+                      'fdSupannCiviliteName'  => $name,
+                      'fdSupannCiviliteLabel' => $label,
+                    ];
+                    echo 'Adding civilite ' . $dn . "\n";
+                    $result = $this->ldap->add($dn, $attrs);
+                    $result->assert();
                   }
                 } catch (Exception $e) {
                   echo 'Failed to add entry "' . $entry . '": ' . $e->getMessage() . "\n";
@@ -601,7 +615,7 @@ class Migration extends Cli\LdapApplication
         }
       }
     } catch (Exception $e) {
-      echo 'No fdSupannRessourceLabels or fdSupannRessourceSubStates attributes found in configuration: '
+      echo 'No fdSupannRessourceLabels, fdSupannRessourceSubStates, fdSupannRessourceSubStatesLabels or fdSupannCivilite attributes found in configuration: '
          . $e->getMessage() . "\n";
     }
   }
