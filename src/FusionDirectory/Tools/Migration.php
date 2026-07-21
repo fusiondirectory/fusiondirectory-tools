@@ -54,6 +54,10 @@ class Migration extends Cli\LdapApplication
           'help'    => 'Migrating your Supann Objects',
           'command' => 'cmdMigrateSupannObjects',
         ],
+        'migrate-consent'           => [
+          'help'    => 'Migrating your Supann Consent Objects',
+          'command' => 'cmdMigrateConsent',
+        ],
         'check-ids'          => [
           'help'    => 'Checking for duplicated uid or gid numbers',
           'command' => 'cmdCheckIds',
@@ -620,6 +624,121 @@ class Migration extends Cli\LdapApplication
       }
     } catch (Exception $e) {
       echo 'No fdSupannRessourceLabels, fdSupannRessourceSubStates, fdSupannRessourceSubStatesLabels or fdSupannCivilite attributes found in configuration: '
+         . $e->getMessage() . "\n";
+    }
+  }
+
+  /**
+   * Migrate Supann Consent Objects from config to LDAP entries
+   * @throws Exception
+   */
+  protected function cmdMigrateConsent (): void
+  {
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception | SodiumException $e) {
+    }
+
+    if ($this->verbose()) {
+      printf('Searching for Supann Consent Objects to migrate' . "\n");
+    }
+
+    try {
+      $list = $this->ldap->search(
+        'cn=config,ou=fusiondirectory,' . $this->base,
+        '(&' .
+        '(|' .
+        '(fdSupannConsentementObjects=*)' .
+        '(fdSupannConsentementTypes=*)' .
+        ')' .
+        ')',
+        ['fdSupannConsentementObjects', 'fdSupannConsentementTypes']
+      );
+      $list->assert();
+      echo 'Supann Consent entries found in configuration' . "\n";
+
+      $ou     = 'ou=consent,ou=supannobjects';
+      $ouName = 'consent';
+      echo 'Create ou=consent,ou=supannobjects branch' . "\n";
+      $branchAdd = $this->ldap->add(
+        $ou . ',' . $this->base,
+        [
+          'ou'          => $ouName,
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+      $branchAdd->assert();
+
+      if ($list->count() > 0) {
+        if ($this->askYnQuestion('Do you want to migrate the Supann Consent Objects?')) {
+          foreach ($list as $dn => $entries) {
+            // Migrate consent objects
+            if (isset($entries['fdSupannConsentementObjects'])) {
+              foreach ($entries['fdSupannConsentementObjects'] as $i => $entry) {
+                if ($i === 'count') {
+                  continue;
+                }
+                try {
+                  list($object, $label) = explode(';', $entry, 2);
+                  $dn    = 'fdSupannConsentObjectName=' . $object . ',ou=consent,ou=supannobjects,' . $this->base;
+                  $attrs = [
+                    'objectClass'               => 'fdSupannConsentObject',
+                    'fdSupannConsentObjectName'  => $object,
+                    'fdSupannConsentObjectLabel' => $label,
+                  ];
+                  echo 'Adding consent object ' . $dn . "\n";
+                  $result = $this->ldap->add($dn, $attrs);
+                  $result->assert();
+                } catch (Exception $e) {
+                  echo 'Failed to add consent object "' . $entry . '": ' . $e->getMessage() . "\n";
+                }
+              }
+            }
+
+            // Migrate consent types
+            if (isset($entries['fdSupannConsentementTypes'])) {
+              foreach ($entries['fdSupannConsentementTypes'] as $i => $entry) {
+                if ($i === 'count') {
+                  continue;
+                }
+                try {
+                  list($type, $label) = explode(';', $entry, 2);
+                  $dn    = 'fdSupannConsentTypeName=' . $type . ',ou=consent,ou=supannobjects,' . $this->base;
+                  $attrs = [
+                    'objectClass'              => 'fdSupannConsentType',
+                    'fdSupannConsentTypeName'  => $type,
+                    'fdSupannConsentTypeLabel' => $label,
+                  ];
+                  echo 'Adding consent type ' . $dn . "\n";
+                  $result = $this->ldap->add($dn, $attrs);
+                  $result->assert();
+                } catch (Exception $e) {
+                  echo 'Failed to add consent type "' . $entry . '": ' . $e->getMessage() . "\n";
+                }
+              }
+            }
+
+            try {
+              echo 'Delete consent from configuration' . "\n";
+              $result = $this->ldap->mod_del('cn=config,ou=fusiondirectory,' . $this->base, [
+                'fdSupannConsentementObjects',
+                'fdSupannConsentementTypes',
+              ]);
+              $result->assert();
+
+              echo 'Add consent RDN to configuration' . "\n";
+              $result = $this->ldap->mod_add('cn=config,ou=fusiondirectory,' . $this->base, [
+                "fdSupannConsentRDN" => "ou=consent,ou=supannobjects",
+              ]);
+              $result->assert();
+            } catch (Exception $e) {
+              echo 'Failed to update configuration: ' . $e->getMessage() . "\n";
+            }
+          }
+        }
+      }
+    } catch (Exception $e) {
+      echo 'No fdSupannConsentementObjects or fdSupannConsentementTypes attributes found in configuration: '
          . $e->getMessage() . "\n";
     }
   }
