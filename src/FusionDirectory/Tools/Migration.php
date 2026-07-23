@@ -70,6 +70,10 @@ class Migration extends Cli\LdapApplication
           'help'    => 'Print an LDIF removing deprecated attributes',
           'command' => 'cmdLdifDeprecated',
         ],
+        'migrate-snapshot-base' => [
+          'help'    => 'Migrate fdSnapshotBase from full DN to relative OU',
+          'command' => 'cmdMigrateSnapshotBase',
+        ],
       ],
       $this->options
     );
@@ -780,6 +784,71 @@ class Migration extends Cli\LdapApplication
       echo "# WARNING: There are entries in the LDAP using obsolete classes, you need to edit them manually\n";
     } else {
       echo "# There are no entries in the LDAP using obsolete classes\n";
+    }
+  }
+
+  /**
+   * Migrate fdSnapshotBase from full DN to relative OU
+   * @throws Exception|\SodiumException
+   */
+  protected function cmdMigrateSnapshotBase (): void
+  {
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception | \SodiumException $e) {
+      echo $e->getMessage();
+      return;
+    }
+
+    $configdn = 'cn=config,ou=fusiondirectory,' . $this->base;
+
+    try {
+      $list = $this->ldap->search(
+        $configdn,
+        '(fdSnapshotBase=*)',
+        ['fdSnapshotBase']
+      );
+      $list->assert();
+    } catch (Exception $e) {
+      echo 'No fdSnapshotBase found in configuration: ' . $e->getMessage() . "\n";
+      return;
+    }
+
+    if ($list->count() === 0) {
+      echo "No fdSnapshotBase attribute found in configuration, nothing to migrate.\n";
+      return;
+    }
+
+    foreach ($list as $dn => $entry) {
+      $oldValue = $entry['fdSnapshotBase'][0] ?? '';
+      if ($oldValue === '') {
+        echo "fdSnapshotBase is empty, nothing to migrate.\n";
+        continue;
+      }
+
+      // Already relative OU (no comma = relative)
+      if (strpos($oldValue, ',') === false) {
+        echo "fdSnapshotBase is already in relative format: '$oldValue', nothing to migrate.\n";
+        continue;
+      }
+
+      // Extract relative OU from full DN
+      // e.g. "ou=snapshots,dc=test-fusiondirectory,dc=org" → "ou=snapshots"
+      $relativeOU = explode(',', $oldValue)[0];
+
+      echo "Migrating fdSnapshotBase from '$oldValue' to '$relativeOU'\n";
+
+      if ($this->askYnQuestion('Do you want to migrate?')) {
+        try {
+          $result = $this->ldap->mod_replace($dn, ['fdSnapshotBase' => $relativeOU]);
+          $result->assert();
+          echo "fdSnapshotBase migrated successfully.\n";
+        } catch (Exception $e) {
+          echo 'Failed to migrate fdSnapshotBase: ' . $e->getMessage() . "\n";
+        }
+      } else {
+        echo "Skipping migration.\n";
+      }
     }
   }
 }
