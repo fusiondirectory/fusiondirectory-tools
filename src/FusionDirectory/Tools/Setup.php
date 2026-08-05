@@ -331,23 +331,47 @@ class Setup extends Cli\LdapApplication
   }
 
   /**
-   * Create an LDAP branch
-   * @param string $ou branch in the form ou=name
+   * Create an LDAP branch, handling multi-level RDNs recursively
+   * @param string $ou branch in the form ou=name or ou=sub,ou=parent
+   * @param string|null $parentDN parent DN to create under, defaults to $this->base
    * @throws Exception
    * @throws \Exception
    */
-  protected function createBranch (string $ou): void
+  protected function createBranch (string $ou, ?string $parentDN = NULL): void
   {
-    if (!preg_match('/^(cn|ou)=([^,]+),?.*?$/', $ou, $m)) {
+    if ($parentDN === NULL) {
+      $parentDN = $this->base;
+    }
+
+    if (!preg_match('/^(cn|ou)=([^,]+)(?:,.*)?$/', $ou, $m)) {
       throw new \Exception("Can’t create branch of unknown type $ou");
     }
+
+    /* Handle multi-level RDNs: ou=locks,ou=fusiondirectory -> create parent first */
+    $parts = explode(',', $ou);
+    if (count($parts) > 1) {
+      $parentRdn = implode(',', array_slice($parts, 1));
+      $parentDn  = $parentRdn . ',' . $this->base;
+      if (!$this->branchExists($parentDn)) {
+        $this->createBranch($parentRdn, $this->base);
+      }
+    }
+
+    $fullDn = $ou . ',' . $parentDN;
+    if ($this->branchExists($fullDn)) {
+      if ($this->verbose()) {
+        printf('Branch %s already exists' . PHP_EOL, $fullDn);
+      }
+      return;
+    }
+
     if ($this->verbose()) {
-      printf('Creating branch %s' . "\n", $ou . ',' . $this->base);
+      printf('Creating branch %s' . PHP_EOL, $fullDn);
     }
     $branchAdd = $this->ldap->add(
-      $ou . ',' . $this->base,
+      $fullDn,
       [
-        'ou'          => $m[1],
+        'ou'          => $m[2],
         'objectClass' => 'organizationalUnit',
       ]
     );
@@ -947,6 +971,34 @@ EOF;
         $this->createBranch($recoveryrdn);
       } else {
         echo 'Skipping…' . "\n";
+      }
+    }
+
+    /* Check locking branch (ou=locks,ou=fusiondirectory) */
+    $lockBranch = 'ou=locks,ou=fusiondirectory';
+    if (!$this->branchExists($lockBranch . ',' . $this->base)) {
+      echo '! ' . $lockBranch . ',' . $this->base . ' not found in your LDAP directory' . "\n";
+
+      if ($this->askYnQuestion('Do you want to create it ?: ')) {
+        $this->createBranch($lockBranch);
+      } else {
+        echo 'Skipping…' . "\n";
+      }
+    }
+
+    /* Dynamically check all fd*RDN plugin branches from LDAP config */
+    foreach ($config as $key => $values) {
+      if (preg_match('/^fd(\w*RDN)$/i', $key, $m) && isset($values[0])) {
+        $rdn = $values[0];
+        if ($rdn !== '' && !$this->branchExists($rdn . ',' . $this->base)) {
+          echo '! ' . $rdn . ',' . $this->base . ' not found in your LDAP directory' . "\n";
+
+          if ($this->askYnQuestion('Do you want to create it ?: ')) {
+            $this->createBranch($rdn);
+          } else {
+            echo 'Skipping…' . "\n";
+          }
+        }
       }
     }
 
