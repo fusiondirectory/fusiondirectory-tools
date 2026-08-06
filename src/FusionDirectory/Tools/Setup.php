@@ -238,7 +238,7 @@ class Setup extends Cli\LdapApplication
             }
           }
         } else {
-          echo 'Skipping…' . "\n";
+          echo 'Skipping...' . "\n";
         }
       } else {
         echo 'Rights on "' . $dir . '" are correct' . "\n";
@@ -263,7 +263,7 @@ class Setup extends Cli\LdapApplication
           throw new \Exception('Unable to change ' . $dir . ' group' . "\n");
         }
       } else {
-        echo 'Skipping…' . "\n";
+        echo 'Skipping...' . "\n";
       }
     } else {
       return FALSE;
@@ -929,7 +929,7 @@ EOF;
           $peopleBranches[] = $userrdn . ',' . $this->base;
           $this->checkAdmin($config, $peopleBranches);
         } else {
-          echo 'Skipping…' . "\n";
+          echo 'Skipping...' . "\n";
         }
       }
     }
@@ -940,7 +940,7 @@ EOF;
       if ($this->askYnQuestion('Do you want to create it ?: ')) {
         $this->createBranch($grouprdn);
       } else {
-        echo 'Skipping…' . "\n";
+        echo 'Skipping...' . "\n";
       }
     }
 
@@ -950,7 +950,7 @@ EOF;
       if ($this->askYnQuestion('Do you want to create it ?: ')) {
         $this->createBranch($tokenrdn);
       } else {
-        echo 'Skipping…' . "\n";
+        echo 'Skipping...' . "\n";
       }
     }
 
@@ -960,7 +960,7 @@ EOF;
       if ($this->askYnQuestion('Do you want to create it ?: ')) {
         $this->createBranch($orchestratorrdn);
       } else {
-        echo 'Skipping…' . "\n";
+        echo 'Skipping...' . "\n";
       }
     }
 
@@ -970,7 +970,7 @@ EOF;
       if ($this->askYnQuestion('Do you want to create it ?: ')) {
         $this->createBranch($recoveryrdn);
       } else {
-        echo 'Skipping…' . "\n";
+        echo 'Skipping...' . "\n";
       }
     }
 
@@ -982,7 +982,7 @@ EOF;
       if ($this->askYnQuestion('Do you want to create it ?: ')) {
         $this->createBranch($lockBranch);
       } else {
-        echo 'Skipping…' . "\n";
+        echo 'Skipping...' . "\n";
       }
     }
 
@@ -996,7 +996,7 @@ EOF;
           if ($this->askYnQuestion('Do you want to create it ?: ')) {
             $this->createBranch($rdn);
           } else {
-            echo 'Skipping…' . "\n";
+            echo 'Skipping...' . "\n";
           }
         }
       }
@@ -1032,7 +1032,7 @@ EOF;
         );
         $result->assert();
       } else {
-        echo 'Skipping…' . "\n";
+        echo 'Skipping...' . "\n";
       }
     }
   }
