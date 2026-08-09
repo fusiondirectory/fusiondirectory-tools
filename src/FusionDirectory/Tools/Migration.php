@@ -827,7 +827,7 @@ class Migration extends Cli\LdapApplication
       }
 
       // Already relative OU (no comma = relative)
-      if (strpos($oldValue, ',') === false) {
+      if (strpos($oldValue, ',') === FALSE) {
         echo "fdSnapshotBase is already in relative format: '$oldValue', nothing to migrate.\n";
         continue;
       }
