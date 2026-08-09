@@ -906,6 +906,7 @@ EOF;
     $tokenrdn             = ($config['fdTokenRDN'][0] ?? '');
     $orchestratorrdn      = ($config['fdOrchestratorTokenRDN'][0] ?? '');
     $recoveryrdn          = ($config['fdRecoveryTokenRDN'][0] ?? '');
+    $snapshotrdn          = ($config['fdSnapshotBase'][0] ?? '');
 
     if ($userrdn !== '') {
       /* Collect existing people branches (even if main one may not exists) */
@@ -998,6 +999,18 @@ EOF;
           } else {
             echo 'Skipping...' . "\n";
           }
+        }
+      }
+    }
+
+    if ($snapshotrdn !== '') {
+      if (!$this->branchExists($snapshotrdn . ',' . $this->base)) {
+        echo '! ' . $snapshotrdn . ',' . $this->base . ' not found in your LDAP directory' . "\n";
+
+        if ($this->askYnQuestion('Do you want to create it ?: ')) {
+          $this->createBranch($snapshotrdn);
+        } else {
+          echo 'Skipping…' . "\n";
         }
       }
     }
