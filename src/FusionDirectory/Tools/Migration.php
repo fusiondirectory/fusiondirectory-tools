@@ -406,9 +406,11 @@ class Migration extends Cli\LdapApplication
         '(fdSupannRessourceSubStates=*)' .
         '(fdSupannRessourceSubStatesLabels=*)' .
         '(fdSupannCiviliteValues=*)' .
+        '(fdMainPopulationCodeConf=*)' .
+        '(fdLocalPopulationCodeConf=*)' .
         ')' .
         ')',
-        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates', 'fdSupannRessourceSubStatesLabels', 'fdSupannCiviliteValues']
+        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates', 'fdSupannRessourceSubStatesLabels', 'fdSupannCiviliteValues', 'fdMainPopulationCodeConf', 'fdLocalPopulationCodeConf']
       );
       $list->assert();
       echo 'SupannObjects entries found in configuration' . "\n";
@@ -452,6 +454,18 @@ class Migration extends Cli\LdapApplication
       $ou        = 'ou=substates,ou=supannobjects';
       $ouName    = 'substates';
       echo 'Create ou=substates,ou=supannobjects branch' . "\n";
+      $branchAdd = $this->ldap->add(
+        $ou . ',' . $this->base,
+        [
+          'ou'          => $ouName,
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+      $branchAdd->assert();
+
+      $ou        = 'ou=populationcodes,ou=supannobjects';
+      $ouName    = 'populationcodes';
+      echo 'Create ou=populationcodes,ou=supannobjects branch' . "\n";
       $branchAdd = $this->ldap->add(
         $ou . ',' . $this->base,
         [
@@ -535,6 +549,7 @@ class Migration extends Cli\LdapApplication
 
       if ($list->count() > 0) {
         if ($this->askYnQuestion('Do you want to migrate the SupannObjects?')) {
+          $processedPopulationCodes = [];
           foreach ($list as $dn => $entries) {
             foreach ($entries as $key => $values) {
               foreach ($values as $i => $entry) {
@@ -597,6 +612,24 @@ class Migration extends Cli\LdapApplication
                     echo 'Adding civilite ' . $dn . "\n";
                     $result = $this->ldap->add($dn, $attrs);
                     $result->assert();
+                  } else if ($key == 'fdMainPopulationCodeConf' || $key == 'fdLocalPopulationCodeConf') {
+                    $name  = $entry;
+                    $label = $entry;
+
+                    if (isset($processedPopulationCodes[$name])) {
+                      continue;
+                    }
+                    $processedPopulationCodes[$name] = TRUE;
+
+                    $dn    = 'fdSupannPopulationCodeName=' . $name .',ou=populationcodes,ou=supannobjects,' . $this->base;
+                    $attrs = [
+                      'objectClass'                => 'fdSupannPopulationCode',
+                      'fdSupannPopulationCodeName' => $name,
+                      'fdSupannPopulationCodeLabel'=> $label,
+                    ];
+                    echo 'Adding population code ' . $dn . "\n";
+                    $result = $this->ldap->add($dn, $attrs);
+                    $result->assert();
                   }
                 } catch (Exception $e) {
                   echo 'Failed to add entry "' . $entry . '": ' . $e->getMessage() . "\n";
@@ -610,10 +643,11 @@ class Migration extends Cli\LdapApplication
 
               echo 'Add supannObjects RDN to configuration' . "\n";
               $result = $this->ldap->mod_add('cn=config,ou=fusiondirectory,' . $this->base, [
-                "fdSupannObjectsRDN"   => "ou=supannobjects",
-                "fdSupannRessourceRDN" => "ou=ressources,ou=supannobjects",
-                "fdSupannStateRDN"     => "ou=states,ou=supannobjects",
-                "fdSupannSubStateRDN"  => "ou=substates,ou=supannobjects"
+                "fdSupannObjectsRDN"           => "ou=supannobjects",
+                "fdSupannRessourceRDN"         => "ou=ressources,ou=supannobjects",
+                "fdSupannStateRDN"             => "ou=states,ou=supannobjects",
+                "fdSupannSubStateRDN"          => "ou=substates,ou=supannobjects",
+                "fdSupannPopulationCodeRDN"    => "ou=populationcodes,ou=supannobjects"
               ]);
               $result->assert();
             } catch (Exception $e) {
@@ -623,7 +657,7 @@ class Migration extends Cli\LdapApplication
         }
       }
     } catch (Exception $e) {
-      echo 'No fdSupannRessourceLabels, fdSupannRessourceSubStates, fdSupannRessourceSubStatesLabels or fdSupannCivilite attributes found in configuration: '
+      echo 'No fdSupannRessourceLabels, fdSupannRessourceSubStates, fdSupannRessourceSubStatesLabels, fdSupannCiviliteValues, fdMainPopulationCodeConf or fdLocalPopulationCodeConf attributes found in configuration: '
          . $e->getMessage() . "\n";
     }
   }
