@@ -625,7 +625,7 @@ class Migration extends Cli\LdapApplication
                     $attrs = [
                       'objectClass'                => 'fdSupannPopulationCode',
                       'fdSupannPopulationCodeName' => $name,
-                      'fdSupannPopulationCodeLabel'=> $label,
+                      'fdSupannLabel'              => $label,
                     ];
                     echo 'Adding population code ' . $dn . "\n";
                     $result = $this->ldap->add($dn, $attrs);
