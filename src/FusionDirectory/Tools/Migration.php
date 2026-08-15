@@ -54,6 +54,10 @@ class Migration extends Cli\LdapApplication
           'help'    => 'Migrating your Supann Objects',
           'command' => 'cmdMigrateSupannObjects',
         ],
+        'migrate-supann-labels'  => [
+          'help'    => 'Migrate supann label attributes to generic fdSupannLabel',
+          'command' => 'cmdMigrateSupannLabelAttributes',
+        ],
         'check-ids'          => [
           'help'    => 'Checking for duplicated uid or gid numbers',
           'command' => 'cmdCheckIds',
@@ -469,7 +473,7 @@ class Migration extends Cli\LdapApplication
         $attrs = [
           'objectClass'            => 'fdSupannRessource',
           'fdSupannRessourceName'  => $resource,
-          'fdSupannRessourceLabel' => $label,
+          'fdSupannLabel' => $label,
         ];
         $result = $this->ldap->add($dn, $attrs);
         $result->assert();
@@ -488,7 +492,7 @@ class Migration extends Cli\LdapApplication
         $attrs = [
           'objectClass'            => 'fdSupannRessourceState',
           'fdSupannStateName'      => $state,
-          'fdSupannRessourceLabel' => $label,
+          'fdSupannLabel' => $label,
         ];
         $result = $this->ldap->add($dn, $attrs);
         $result->assert();
@@ -554,7 +558,7 @@ class Migration extends Cli\LdapApplication
                     $attrs = [
                       'objectClass'            => 'fdSupannRessourceSubState',
                       'fdSupannSubStateName'   => $substate,
-                      'fdSupannRessourceLabel' => $substateLabel,
+                      'fdSupannLabel' => $substateLabel,
                     ];
 
                     $result = $this->ldap->add($dn, $attrs);
@@ -575,7 +579,7 @@ class Migration extends Cli\LdapApplication
                     $attrs = [
                       'objectClass'            => 'fdSupannRessource',
                       'fdSupannRessourceName'  => $resource,
-                      'fdSupannRessourceLabel' => $label,
+                      'fdSupannLabel' => $label,
                     ];
                     echo 'Adding ressource ' . $dn . "\n";
                     $result = $this->ldap->add($dn, $attrs);
@@ -588,7 +592,7 @@ class Migration extends Cli\LdapApplication
                     $attrs = [
                       'objectClass'            => 'fdSupannCivilite',
                       'fdSupannCiviliteName'  => $name,
-                      'fdSupannCiviliteLabel' => $label,
+                      'fdSupannLabel' => $label,
                     ];
                     echo 'Adding civilite ' . $dn . "\n";
                     $result = $this->ldap->add($dn, $attrs);
@@ -622,6 +626,67 @@ class Migration extends Cli\LdapApplication
       echo 'No fdSupannRessourceLabels, fdSupannRessourceSubStates, fdSupannRessourceSubStatesLabels or fdSupannCivilite attributes found in configuration: '
          . $e->getMessage() . "\n";
     }
+  }
+
+  /**
+   * Migrate supann label attributes from fdSupannRessourceLabel/fdSupannCiviliteLabel to generic fdSupannLabel
+   * @throws Exception
+   */
+  protected function cmdMigrateSupannLabelAttributes (): void
+  {
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception | SodiumException $e) {
+      echo $e->getMessage();
+      return;
+    }
+
+    $filter = '(|(fdSupannRessourceLabel=*)(fdSupannCiviliteLabel=*)(fdSupannConsentTypeLabel=*)(fdSupannConsentObjectLabel=*))';
+    $ldap = $this->ldap->search($this->base, $filter,
+        ['dn', 'fdSupannRessourceLabel', 'fdSupannCiviliteLabel', 'fdSupannConsentTypeLabel', 'fdSupannConsentObjectLabel']);
+    $ldap->assert();
+
+    $count = 0;
+    foreach ($ldap as $dn => $attrs) {
+      $oldLabel = $attrs['fdSupannRessourceLabel'][0]
+                ?? $attrs['fdSupannCiviliteLabel'][0]
+                ?? $attrs['fdSupannConsentTypeLabel'][0]
+                ?? $attrs['fdSupannConsentObjectLabel'][0]
+                ?? NULL;
+      if ($oldLabel === NULL) {
+        continue;
+      }
+
+      echo "Migrating $dn: setting fdSupannLabel='$oldLabel'\n";
+
+      try {
+        $result = $this->ldap->mod_add($dn, ['fdSupannLabel' => $oldLabel]);
+        $result->assert();
+
+        if (!empty($attrs['fdSupannRessourceLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannRessourceLabel' => []]);
+          $result->assert();
+        }
+        if (!empty($attrs['fdSupannCiviliteLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannCiviliteLabel' => []]);
+          $result->assert();
+        }
+        if (!empty($attrs['fdSupannConsentTypeLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannConsentTypeLabel' => []]);
+          $result->assert();
+        }
+        if (!empty($attrs['fdSupannConsentObjectLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannConsentObjectLabel' => []]);
+          $result->assert();
+        }
+
+        $count++;
+      } catch (Exception $e) {
+        echo "Failed to migrate $dn: " . $e->getMessage() . "\n";
+      }
+    }
+
+    echo "Migrated $count entries to fdSupannLabel\n";
   }
 
   /**

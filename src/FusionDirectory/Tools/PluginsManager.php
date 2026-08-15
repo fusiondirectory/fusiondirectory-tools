@@ -161,7 +161,15 @@ class PluginsManager extends Cli\LdapApplication
       }
 
       $this->ldap = new Ldap\Link($this->conf['default']['uri']);
-      $this->ldap->bind($this->conf['default']['bind_dn'], $this->conf['default']['bind_pwd']);
+      try {
+        $this->ldap->bind($this->conf['default']['bind_dn'], $this->conf['default']['bind_pwd']);
+      } catch (Ldap\Exception $e) {
+        if ($this->getopt['debug']) {
+          throw $e;
+        }
+        echo "Failed to connect to the LDAP server. Check your FusionDirectory configuration." . PHP_EOL;
+        exit;
+      }
 
       if (!$this->branchExist('ou=pluginManager,' . $this->conf['default']['base'])) {
         $this->createBranchPlugins();
