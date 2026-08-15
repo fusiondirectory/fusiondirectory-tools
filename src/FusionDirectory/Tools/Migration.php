@@ -641,15 +641,17 @@ class Migration extends Cli\LdapApplication
       return;
     }
 
-    $filter = '(|(fdSupannRessourceLabel=*)(fdSupannCiviliteLabel=*))';
+    $filter = '(|(fdSupannRessourceLabel=*)(fdSupannCiviliteLabel=*)(fdSupannConsentTypeLabel=*)(fdSupannConsentObjectLabel=*))';
     $ldap = $this->ldap->search($this->base, $filter,
-        ['dn', 'fdSupannRessourceLabel', 'fdSupannCiviliteLabel']);
+        ['dn', 'fdSupannRessourceLabel', 'fdSupannCiviliteLabel', 'fdSupannConsentTypeLabel', 'fdSupannConsentObjectLabel']);
     $ldap->assert();
 
     $count = 0;
     foreach ($ldap as $dn => $attrs) {
       $oldLabel = $attrs['fdSupannRessourceLabel'][0]
                 ?? $attrs['fdSupannCiviliteLabel'][0]
+                ?? $attrs['fdSupannConsentTypeLabel'][0]
+                ?? $attrs['fdSupannConsentObjectLabel'][0]
                 ?? null;
       if ($oldLabel === null) {
         continue;
@@ -667,6 +669,14 @@ class Migration extends Cli\LdapApplication
         }
         if (!empty($attrs['fdSupannCiviliteLabel'])) {
           $result = $this->ldap->mod_del($dn, ['fdSupannCiviliteLabel' => []]);
+          $result->assert();
+        }
+        if (!empty($attrs['fdSupannConsentTypeLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannConsentTypeLabel' => []]);
+          $result->assert();
+        }
+        if (!empty($attrs['fdSupannConsentObjectLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannConsentObjectLabel' => []]);
           $result->assert();
         }
 
