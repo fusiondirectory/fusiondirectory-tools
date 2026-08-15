@@ -652,8 +652,8 @@ class Migration extends Cli\LdapApplication
                 ?? $attrs['fdSupannCiviliteLabel'][0]
                 ?? $attrs['fdSupannConsentTypeLabel'][0]
                 ?? $attrs['fdSupannConsentObjectLabel'][0]
-                ?? null;
-      if ($oldLabel === null) {
+                ?? NULL;
+      if ($oldLabel === NULL) {
         continue;
       }
 
