@@ -475,6 +475,39 @@ class Migration extends Cli\LdapApplication
       );
       $branchAdd->assert();
 
+      // Track processed population codes to avoid duplicates between defaults and config
+      $processedPopulationCodes = [];
+
+      // Add default population codes (from old setBasicMainCodes())
+      $defaultPopulationCodes = [
+        '{SUPANN}P', '{SUPANN}PX', '{SUPANN}PXE', '{SUPANN}PXL', '{SUPANN}PXR', '{SUPANN}PXSP', '{SUPANN}PXU',
+        '{SUPANN}R',
+        '{SUPANN}RG', '{SUPANN}RGI', '{SUPANN}RGIE', '{SUPANN}RGIS', '{SUPANN}RGN',
+        '{SUPANN}RGNC', '{SUPANN}RGNCC', '{SUPANN}RGNCD', '{SUPANN}RGNE', '{SUPANN}RGNF',
+        '{SUPANN}RGNFA', '{SUPANN}RGNFC', '{SUPANN}RGNFD', '{SUPANN}RGNS', '{SUPANN}RGNSP',
+        '{SUPANN}RGP', '{SUPANN}RGPE', '{SUPANN}RGPET', '{SUPANN}RGPF', '{SUPANN}RGPFT', '{SUPANN}RGPST',
+        '{SUPANN}RHTC', '{SUPANN}RHTCE', '{SUPANN}RHJCF', '{SUPANN}RHJSG', '{SUPANN}RHLE',
+        '{SUPANN}RHLS', '{SUPANN}RHMF', '{SUPANN}RHTSO',
+        '{SUPANN}TER',
+      ];
+
+      foreach ($defaultPopulationCodes as $code) {
+        $processedPopulationCodes[$code] = TRUE;
+        $dn    = 'fdSupannPopulationCodeName=' . $code . ',ou=populationcodes,ou=supannobjects,' . $this->base;
+        $attrs = [
+          'objectClass'                => 'fdSupannPopulationCode',
+          'fdSupannPopulationCodeName' => $code,
+          'fdSupannLabel'              => $code,
+        ];
+        echo 'Adding default population code ' . $dn . "\n";
+        try {
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+        } catch (Exception $e) {
+          echo 'Failed to add default population code "' . $code . '": ' . $e->getMessage() . "\n";
+        }
+      }
+
       // Add COMPTE and MAIL ressource
       $mainRessources = [
         "COMPTE" => "Compte",
@@ -549,7 +582,6 @@ class Migration extends Cli\LdapApplication
 
       if ($list->count() > 0) {
         if ($this->askYnQuestion('Do you want to migrate the SupannObjects?')) {
-          $processedPopulationCodes = [];
           foreach ($list as $dn => $entries) {
             foreach ($entries as $key => $values) {
               foreach ($values as $i => $entry) {
