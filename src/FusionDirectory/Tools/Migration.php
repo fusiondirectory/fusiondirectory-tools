@@ -406,9 +406,11 @@ class Migration extends Cli\LdapApplication
         '(fdSupannRessourceSubStates=*)' .
         '(fdSupannRessourceSubStatesLabels=*)' .
         '(fdSupannCiviliteValues=*)' .
+        '(fdMainPopulationCodeConf=*)' .
+        '(fdLocalPopulationCodeConf=*)' .
         ')' .
         ')',
-        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates', 'fdSupannRessourceSubStatesLabels', 'fdSupannCiviliteValues']
+        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates', 'fdSupannRessourceSubStatesLabels', 'fdSupannCiviliteValues', 'fdMainPopulationCodeConf', 'fdLocalPopulationCodeConf']
       );
       $list->assert();
       echo 'SupannObjects entries found in configuration' . "\n";
@@ -460,6 +462,52 @@ class Migration extends Cli\LdapApplication
         ]
       );
       $branchAdd->assert();
+
+      $ou        = 'ou=populationcodes,ou=supannobjects';
+      $ouName    = 'populationcodes';
+      echo 'Create ou=populationcodes,ou=supannobjects branch' . "\n";
+      $branchAdd = $this->ldap->add(
+        $ou . ',' . $this->base,
+        [
+          'ou'          => $ouName,
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+      $branchAdd->assert();
+
+      // Track processed population codes to avoid duplicates between defaults and config
+      $processedPopulationCodes = [];
+
+      // Add default population codes (from old setBasicMainCodes())
+      $defaultPopulationCodes = [
+        '{SUPANN}P', '{SUPANN}PX', '{SUPANN}PXE', '{SUPANN}PXL', '{SUPANN}PXR', '{SUPANN}PXSP', '{SUPANN}PXU',
+        '{SUPANN}R',
+        '{SUPANN}RG', '{SUPANN}RGI', '{SUPANN}RGIE', '{SUPANN}RGIS', '{SUPANN}RGN',
+        '{SUPANN}RGNC', '{SUPANN}RGNCC', '{SUPANN}RGNCD', '{SUPANN}RGNE', '{SUPANN}RGNF',
+        '{SUPANN}RGNFA', '{SUPANN}RGNFC', '{SUPANN}RGNFD', '{SUPANN}RGNS', '{SUPANN}RGNSP',
+        '{SUPANN}RGP', '{SUPANN}RGPE', '{SUPANN}RGPET', '{SUPANN}RGPF', '{SUPANN}RGPFT', '{SUPANN}RGPST',
+        '{SUPANN}RHTC', '{SUPANN}RHTCE', '{SUPANN}RHJCF', '{SUPANN}RHJSG', '{SUPANN}RHLE',
+        '{SUPANN}RHLS', '{SUPANN}RHMF', '{SUPANN}RHTSO',
+        '{SUPANN}TER',
+      ];
+
+      foreach ($defaultPopulationCodes as $code) {
+        $processedPopulationCodes[$code] = TRUE;
+
+        $dn    = 'fdSupannPopulationCodeName=' . $code . ',ou=populationcodes,ou=supannobjects,' . $this->base;
+        $attrs = [
+          'objectClass'                => 'fdSupannPopulationCode',
+          'fdSupannPopulationCodeName' => $code,
+          'fdSupannLabel'              => $code,
+        ];
+        echo 'Adding default population code ' . $dn . "\n";
+        try {
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+        } catch (Exception $e) {
+          echo 'Failed to add default population code "' . $code . '": ' . $e->getMessage() . "\n";
+        }
+      }
 
       // Add COMPTE and MAIL ressource
       $mainRessources = [
@@ -597,6 +645,24 @@ class Migration extends Cli\LdapApplication
                     echo 'Adding civilite ' . $dn . "\n";
                     $result = $this->ldap->add($dn, $attrs);
                     $result->assert();
+                  } else if ($key == 'fdMainPopulationCodeConf' || $key == 'fdLocalPopulationCodeConf') {
+                    $name  = $entry;
+                    $label = $entry;
+
+                    if (isset($processedPopulationCodes[$name])) {
+                      continue;
+                    }
+                    $processedPopulationCodes[$name] = TRUE;
+
+                    $dn    = 'fdSupannPopulationCodeName=' . $name .',ou=populationcodes,ou=supannobjects,' . $this->base;
+                    $attrs = [
+                      'objectClass'                => 'fdSupannPopulationCode',
+                      'fdSupannPopulationCodeName' => $name,
+                      'fdSupannLabel'              => $label,
+                    ];
+                    echo 'Adding population code ' . $dn . "\n";
+                    $result = $this->ldap->add($dn, $attrs);
+                    $result->assert();
                   }
                 } catch (Exception $e) {
                   echo 'Failed to add entry "' . $entry . '": ' . $e->getMessage() . "\n";
@@ -610,10 +676,11 @@ class Migration extends Cli\LdapApplication
 
               echo 'Add supannObjects RDN to configuration' . "\n";
               $result = $this->ldap->mod_add('cn=config,ou=fusiondirectory,' . $this->base, [
-                "fdSupannObjectsRDN"   => "ou=supannobjects",
-                "fdSupannRessourceRDN" => "ou=ressources,ou=supannobjects",
-                "fdSupannStateRDN"     => "ou=states,ou=supannobjects",
-                "fdSupannSubStateRDN"  => "ou=substates,ou=supannobjects"
+                "fdSupannObjectsRDN"           => "ou=supannobjects",
+                "fdSupannRessourceRDN"         => "ou=ressources,ou=supannobjects",
+                "fdSupannStateRDN"             => "ou=states,ou=supannobjects",
+                "fdSupannSubStateRDN"          => "ou=substates,ou=supannobjects",
+                "fdSupannPopulationCodeRDN"    => "ou=populationcodes,ou=supannobjects"
               ]);
               $result->assert();
             } catch (Exception $e) {
@@ -623,7 +690,7 @@ class Migration extends Cli\LdapApplication
         }
       }
     } catch (Exception $e) {
-      echo 'No fdSupannRessourceLabels, fdSupannRessourceSubStates, fdSupannRessourceSubStatesLabels or fdSupannCivilite attributes found in configuration: '
+      echo 'No fdSupannRessourceLabels, fdSupannRessourceSubStates, fdSupannRessourceSubStatesLabels, fdSupannCiviliteValues, fdMainPopulationCodeConf or fdLocalPopulationCodeConf attributes found in configuration: '
          . $e->getMessage() . "\n";
     }
   }
