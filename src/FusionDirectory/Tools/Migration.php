@@ -493,6 +493,7 @@ class Migration extends Cli\LdapApplication
 
       foreach ($defaultPopulationCodes as $code) {
         $processedPopulationCodes[$code] = TRUE;
+
         $dn    = 'fdSupannPopulationCodeName=' . $code . ',ou=populationcodes,ou=supannobjects,' . $this->base;
         $attrs = [
           'objectClass'                => 'fdSupannPopulationCode',
