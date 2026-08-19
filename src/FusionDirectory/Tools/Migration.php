@@ -513,12 +513,14 @@ class Migration extends Cli\LdapApplication
 
       foreach ($defaultPopulationCodes as $code) {
         $processedPopulationCodes[$code] = TRUE;
+
         $dn    = 'fdSupannPopulationCodeName=' . $code . ',ou=populationcodes,ou=supannobjects,' . $this->base;
         $attrs = [
           'objectClass'                => 'fdSupannPopulationCode',
           'fdSupannPopulationCodeName' => $code,
           'fdSupannLabel'              => $code,
         ];
+
         echo 'Adding default population code ' . $dn . "\n";
         try {
           $result = $this->ldap->add($dn, $attrs);
