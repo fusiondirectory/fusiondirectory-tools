@@ -581,6 +581,16 @@ class Migration extends Cli\LdapApplication
         "SupannVerrouTechnique"     => "Verouillage technique"
       ];
 
+      $stateSubstateLink = [
+        "A" => ["SupannAnticipe", "SupannActif", "SupannSursis"],
+        "I" => [
+          "SupannPrecree", "SupannCree", "SupannExpire",
+          "SupannInactif", "SupannSupprDonnees", "SupannSupprCompte",
+          "SupannVerrouille", "SupannVerrouAdministratif", "SupannVerrouTechnique"
+        ],
+        "S" => ["SupannVerrouille", "SupannVerrouAdministratif", "SupannVerrouTechnique"]
+      ];
+
       // Complete the substateLabels with fdSupannRessourceSubStatesLabels
       if ($list->count() > 0) {
         echo 'Complete substateLabels with fdSupannRessourceSubStatesLabels' . "\n";
@@ -611,14 +621,18 @@ class Migration extends Cli\LdapApplication
 
           $result = $this->ldap->add($dn, $attrs);
           $result->assert();
+        }
 
-          // Add substate to the correct state
-          $dnState = 'fdSupannStateName=' . $state .',ou=states,ou=supannobjects,' . $this->base;
-          echo 'Link substate ' . $dn . ' to state ' . $dnState . "\n";
-          $result = $this->ldap->mod_add($dnState, [
-            "fdSupannSubStateList" => $dn
-          ]);
-          $result->assert();
+        foreach ($stateSubstateLink as $state => $subStateArray) {
+          foreach ($subStateArray as $substate) {
+            // Add substate to the correct state
+            $dnState = 'fdSupannStateName=' . $state .',ou=states,ou=supannobjects,' . $this->base;
+            echo 'Link substate ' . $substate . ' for state ' . $state . PHP_EOL;
+            $result = $this->ldap->mod_add($dnState, [
+              "fdSupannSubStateList" => 'fdSupannSubStateName=' . $substate .',ou=substates,ou=supannobjects,' . $this->base
+            ]);
+            $result->assert();
+          }
         }
       }
 
