@@ -850,8 +850,8 @@ class Migration extends Cli\LdapApplication
             try {
               echo 'Delete consent from configuration' . "\n";
               $result = $this->ldap->mod_del('cn=config,ou=fusiondirectory,' . $this->base, [
-                'fdSupannConsentementObjects',
-                'fdSupannConsentementTypes',
+                'fdSupannConsentementObjects' => [],
+                'fdSupannConsentementTypes'   => [],
               ]);
               $result->assert();
 
