@@ -58,6 +58,10 @@ class Migration extends Cli\LdapApplication
           'help'    => 'Migrating your Supann Consent Objects',
           'command' => 'cmdMigrateConsent',
         ],
+        'migrate-supann-labels'  => [
+          'help'    => 'Migrate supann label attributes to generic fdSupannLabel',
+          'command' => 'cmdMigrateSupannLabelAttributes',
+        ],
         'check-ids'          => [
           'help'    => 'Checking for duplicated uid or gid numbers',
           'command' => 'cmdCheckIds',
@@ -406,60 +410,129 @@ class Migration extends Cli\LdapApplication
         '(fdSupannRessourceSubStates=*)' .
         '(fdSupannRessourceSubStatesLabels=*)' .
         '(fdSupannCiviliteValues=*)' .
+        '(fdMainPopulationCodeConf=*)' .
+        '(fdLocalPopulationCodeConf=*)' .
         ')' .
         ')',
-        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates', 'fdSupannRessourceSubStatesLabels', 'fdSupannCiviliteValues']
+        ['fdSupannRessourceLabels', 'fdSupannRessourceSubStates', 'fdSupannRessourceSubStatesLabels', 'fdSupannCiviliteValues', 'fdMainPopulationCodeConf', 'fdLocalPopulationCodeConf']
       );
       $list->assert();
       echo 'SupannObjects entries found in configuration' . "\n";
 
-      $ou        = 'ou=supannobjects';
-      $ouName    = 'supannobjects';
-      echo 'Create ou=supannobjects branch' . "\n";
-      $branchAdd = $this->ldap->add(
-        $ou . ',' . $this->base,
-        [
-          'ou'          => $ouName,
-          'objectClass' => 'organizationalUnit',
-        ]
-      );
-      $branchAdd->assert();
+      try {
+        $ou        = 'ou=supannobjects';
+        $ouName    = 'supannobjects';
+        echo 'Create ou=supannobjects branch' . "\n";
+        $branchAdd = $this->ldap->add(
+          $ou . ',' . $this->base,
+          [
+            'ou'          => $ouName,
+            'objectClass' => 'organizationalUnit',
+          ]
+        );
+        $branchAdd->assert();
+      } catch (Exception $e) {
+        echo "Exception: " . $e->getMessage() . PHP_EOL;
+      }
 
-      $ou        = 'ou=ressources,ou=supannobjects';
-      $ouName    = 'ressources';
-      echo 'Create ou=ressources,ou=supannobjects branch' . "\n";
-      $branchAdd = $this->ldap->add(
-        $ou . ',' . $this->base,
-        [
-          'ou'          => $ouName,
-          'objectClass' => 'organizationalUnit',
-        ]
-      );
-      $branchAdd->assert();
+      try {
+        $ou        = 'ou=ressources,ou=supannobjects';
+        $ouName    = 'ressources';
+        echo 'Create ou=ressources,ou=supannobjects branch' . "\n";
+        $branchAdd = $this->ldap->add(
+          $ou . ',' . $this->base,
+          [
+            'ou'          => $ouName,
+            'objectClass' => 'organizationalUnit',
+          ]
+        );
+        $branchAdd->assert();
+      } catch (Exception $e) {
+        echo "Exception: " . $e->getMessage() . PHP_EOL;
+      }
 
-      $ou        = 'ou=states,ou=supannobjects';
-      $ouName    = 'states';
-      echo 'Create ou=states,ou=supannobjects branch' . "\n";
-      $branchAdd = $this->ldap->add(
-        $ou . ',' . $this->base,
-        [
-          'ou'          => $ouName,
-          'objectClass' => 'organizationalUnit',
-        ]
-      );
-      $branchAdd->assert();
+      try {
+        $ou        = 'ou=states,ou=supannobjects';
+        $ouName    = 'states';
+        echo 'Create ou=states,ou=supannobjects branch' . "\n";
+        $branchAdd = $this->ldap->add(
+          $ou . ',' . $this->base,
+          [
+            'ou'          => $ouName,
+            'objectClass' => 'organizationalUnit',
+          ]
+        );
+        $branchAdd->assert();
+      } catch (Exception $e) {
+        echo "Exception: " . $e->getMessage() . PHP_EOL;
+      }
 
-      $ou        = 'ou=substates,ou=supannobjects';
-      $ouName    = 'substates';
-      echo 'Create ou=substates,ou=supannobjects branch' . "\n";
-      $branchAdd = $this->ldap->add(
-        $ou . ',' . $this->base,
-        [
-          'ou'          => $ouName,
-          'objectClass' => 'organizationalUnit',
-        ]
-      );
-      $branchAdd->assert();
+      try {
+        $ou        = 'ou=substates,ou=supannobjects';
+        $ouName    = 'substates';
+        echo 'Create ou=substates,ou=supannobjects branch' . "\n";
+        $branchAdd = $this->ldap->add(
+          $ou . ',' . $this->base,
+          [
+            'ou'          => $ouName,
+            'objectClass' => 'organizationalUnit',
+          ]
+        );
+        $branchAdd->assert();
+      } catch (Exception $e) {
+        echo "Exception: " . $e->getMessage() . PHP_EOL;
+      }
+
+      try {
+        $ou        = 'ou=populationcodes,ou=supannobjects';
+        $ouName    = 'populationcodes';
+        echo 'Create ou=populationcodes,ou=supannobjects branch' . "\n";
+        $branchAdd = $this->ldap->add(
+          $ou . ',' . $this->base,
+          [
+            'ou'          => $ouName,
+            'objectClass' => 'organizationalUnit',
+          ]
+        );
+        $branchAdd->assert();
+      } catch (Exception $e) {
+        echo "Exception: " . $e->getMessage() . PHP_EOL;
+      }
+
+      // Track processed population codes to avoid duplicates between defaults and config
+      $processedPopulationCodes = [];
+
+      // Add default population codes (from old setBasicMainCodes())
+      $defaultPopulationCodes = [
+        '{SUPANN}P', '{SUPANN}PX', '{SUPANN}PXE', '{SUPANN}PXL', '{SUPANN}PXR', '{SUPANN}PXSP', '{SUPANN}PXU',
+        '{SUPANN}R',
+        '{SUPANN}RG', '{SUPANN}RGI', '{SUPANN}RGIE', '{SUPANN}RGIS', '{SUPANN}RGN',
+        '{SUPANN}RGNC', '{SUPANN}RGNCC', '{SUPANN}RGNCD', '{SUPANN}RGNE', '{SUPANN}RGNF',
+        '{SUPANN}RGNFA', '{SUPANN}RGNFC', '{SUPANN}RGNFD', '{SUPANN}RGNS', '{SUPANN}RGNSP',
+        '{SUPANN}RGP', '{SUPANN}RGPE', '{SUPANN}RGPET', '{SUPANN}RGPF', '{SUPANN}RGPFT', '{SUPANN}RGPST',
+        '{SUPANN}RHTC', '{SUPANN}RHTCE', '{SUPANN}RHJCF', '{SUPANN}RHJSG', '{SUPANN}RHLE',
+        '{SUPANN}RHLS', '{SUPANN}RHMF', '{SUPANN}RHTSO',
+        '{SUPANN}TER',
+      ];
+
+      foreach ($defaultPopulationCodes as $code) {
+        $processedPopulationCodes[$code] = TRUE;
+
+        $dn    = 'fdSupannPopulationCodeName=' . $code . ',ou=populationcodes,ou=supannobjects,' . $this->base;
+        $attrs = [
+          'objectClass'                => 'fdSupannPopulationCode',
+          'fdSupannPopulationCodeName' => $code,
+          'fdSupannLabel'              => $code,
+        ];
+
+        echo 'Adding default population code ' . $dn . "\n";
+        try {
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+        } catch (Exception $e) {
+          echo 'Failed to add default population code "' . $code . '": ' . $e->getMessage() . "\n";
+        }
+      }
 
       // Add COMPTE and MAIL ressource
       $mainRessources = [
@@ -473,7 +546,7 @@ class Migration extends Cli\LdapApplication
         $attrs = [
           'objectClass'            => 'fdSupannRessource',
           'fdSupannRessourceName'  => $resource,
-          'fdSupannRessourceLabel' => $label,
+          'fdSupannLabel' => $label,
         ];
         $result = $this->ldap->add($dn, $attrs);
         $result->assert();
@@ -492,7 +565,7 @@ class Migration extends Cli\LdapApplication
         $attrs = [
           'objectClass'            => 'fdSupannRessourceState',
           'fdSupannStateName'      => $state,
-          'fdSupannRessourceLabel' => $label,
+          'fdSupannLabel' => $label,
         ];
         $result = $this->ldap->add($dn, $attrs);
         $result->assert();
@@ -514,9 +587,19 @@ class Migration extends Cli\LdapApplication
         "SupannVerrouTechnique"     => "Verouillage technique"
       ];
 
+      $stateSubstateLink = [
+        "A" => ["SupannAnticipe", "SupannActif", "SupannSursis"],
+        "I" => [
+          "SupannPrecree", "SupannCree", "SupannExpire",
+          "SupannInactif", "SupannSupprDonnees", "SupannSupprCompte",
+          "SupannVerrouille", "SupannVerrouAdministratif", "SupannVerrouTechnique"
+        ],
+        "S" => ["SupannVerrouille", "SupannVerrouAdministratif", "SupannVerrouTechnique"]
+      ];
+
       // Complete the substateLabels with fdSupannRessourceSubStatesLabels
-      echo 'Complete substateLabels with fdSupannRessourceSubStatesLabels' . "\n";
       if ($list->count() > 0) {
+        echo 'Complete substateLabels with fdSupannRessourceSubStatesLabels' . "\n";
         foreach ($list as $dn => $entries) {
           foreach ($entries as $key => $values) {
             foreach ($values as $i => $entry) {
@@ -529,6 +612,32 @@ class Migration extends Cli\LdapApplication
                 $substateLabels += [ $substate => $label ];
               }
             }
+          }
+        }
+      } else {
+        // No entry in configuration but still try to add the default substate
+        foreach ($substateLabels as $substate => $substateLabel) {
+          $dn    = 'fdSupannSubStateName=' . $substate .',ou=substates,ou=supannobjects,' . $this->base;
+          echo 'Adding substate ' . $dn . "\n";
+          $attrs = [
+            'objectClass'            => 'fdSupannRessourceSubState',
+            'fdSupannSubStateName'   => $substate,
+            'fdSupannLabel'          => $substateLabel,
+          ];
+
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+        }
+
+        foreach ($stateSubstateLink as $state => $subStateArray) {
+          foreach ($subStateArray as $substate) {
+            // Add substate to the correct state
+            $dnState = 'fdSupannStateName=' . $state .',ou=states,ou=supannobjects,' . $this->base;
+            echo 'Link substate ' . $substate . ' for state ' . $state . PHP_EOL;
+            $result = $this->ldap->mod_add($dnState, [
+              "fdSupannSubStateList" => 'fdSupannSubStateName=' . $substate .',ou=substates,ou=supannobjects,' . $this->base
+            ]);
+            $result->assert();
           }
         }
       }
@@ -558,7 +667,7 @@ class Migration extends Cli\LdapApplication
                     $attrs = [
                       'objectClass'            => 'fdSupannRessourceSubState',
                       'fdSupannSubStateName'   => $substate,
-                      'fdSupannRessourceLabel' => $substateLabel,
+                      'fdSupannLabel' => $substateLabel,
                     ];
 
                     $result = $this->ldap->add($dn, $attrs);
@@ -579,7 +688,7 @@ class Migration extends Cli\LdapApplication
                     $attrs = [
                       'objectClass'            => 'fdSupannRessource',
                       'fdSupannRessourceName'  => $resource,
-                      'fdSupannRessourceLabel' => $label,
+                      'fdSupannLabel' => $label,
                     ];
                     echo 'Adding ressource ' . $dn . "\n";
                     $result = $this->ldap->add($dn, $attrs);
@@ -592,9 +701,27 @@ class Migration extends Cli\LdapApplication
                     $attrs = [
                       'objectClass'            => 'fdSupannCivilite',
                       'fdSupannCiviliteName'  => $name,
-                      'fdSupannCiviliteLabel' => $label,
+                      'fdSupannLabel' => $label,
                     ];
                     echo 'Adding civilite ' . $dn . "\n";
+                    $result = $this->ldap->add($dn, $attrs);
+                    $result->assert();
+                  } else if ($key == 'fdMainPopulationCodeConf' || $key == 'fdLocalPopulationCodeConf') {
+                    $name  = $entry;
+                    $label = $entry;
+
+                    if (isset($processedPopulationCodes[$name])) {
+                      continue;
+                    }
+                    $processedPopulationCodes[$name] = TRUE;
+
+                    $dn    = 'fdSupannPopulationCodeName=' . $name .',ou=populationcodes,ou=supannobjects,' . $this->base;
+                    $attrs = [
+                      'objectClass'                => 'fdSupannPopulationCode',
+                      'fdSupannPopulationCodeName' => $name,
+                      'fdSupannLabel'              => $label,
+                    ];
+                    echo 'Adding population code ' . $dn . "\n";
                     $result = $this->ldap->add($dn, $attrs);
                     $result->assert();
                   }
@@ -607,13 +734,13 @@ class Migration extends Cli\LdapApplication
               echo 'Delete supannObjects from configuration' . "\n";
               $result = $this->ldap->mod_del('cn=config,ou=fusiondirectory,' . $this->base, $entries);
               $result->assert();
-
               echo 'Add supannObjects RDN to configuration' . "\n";
               $result = $this->ldap->mod_add('cn=config,ou=fusiondirectory,' . $this->base, [
-                "fdSupannObjectsRDN"   => "ou=supannobjects",
-                "fdSupannRessourceRDN" => "ou=ressources,ou=supannobjects",
-                "fdSupannStateRDN"     => "ou=states,ou=supannobjects",
-                "fdSupannSubStateRDN"  => "ou=substates,ou=supannobjects"
+                "fdSupannObjectsRDN"           => "ou=supannobjects",
+                "fdSupannRessourceRDN"         => "ou=ressources,ou=supannobjects",
+                "fdSupannStateRDN"             => "ou=states,ou=supannobjects",
+                "fdSupannSubStateRDN"          => "ou=substates,ou=supannobjects",
+                "fdSupannPopulationCodeRDN"    => "ou=populationcodes,ou=supannobjects"
               ]);
               $result->assert();
             } catch (Exception $e) {
@@ -623,7 +750,7 @@ class Migration extends Cli\LdapApplication
         }
       }
     } catch (Exception $e) {
-      echo 'No fdSupannRessourceLabels, fdSupannRessourceSubStates, fdSupannRessourceSubStatesLabels or fdSupannCivilite attributes found in configuration: '
+      echo 'No fdSupannRessourceLabels, fdSupannRessourceSubStates, fdSupannRessourceSubStatesLabels, fdSupannCiviliteValues, fdMainPopulationCodeConf or fdLocalPopulationCodeConf attributes found in configuration: '
          . $e->getMessage() . "\n";
     }
   }
@@ -637,6 +764,8 @@ class Migration extends Cli\LdapApplication
     try {
       $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
     } catch (Exception | SodiumException $e) {
+      echo $e->getMessage();
+      return;
     }
 
     if ($this->verbose()) {
@@ -741,6 +870,67 @@ class Migration extends Cli\LdapApplication
       echo 'No fdSupannConsentementObjects or fdSupannConsentementTypes attributes found in configuration: '
          . $e->getMessage() . "\n";
     }
+  }
+
+  /**
+   * Migrate supann label attributes from fdSupannRessourceLabel/fdSupannCiviliteLabel to generic fdSupannLabel
+   * @throws Exception
+   */
+  protected function cmdMigrateSupannLabelAttributes (): void
+  {
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception | SodiumException $e) {
+      echo $e->getMessage();
+      return;
+    }
+
+    $filter = '(|(fdSupannRessourceLabel=*)(fdSupannCiviliteLabel=*)(fdSupannConsentTypeLabel=*)(fdSupannConsentObjectLabel=*))';
+    $ldap = $this->ldap->search($this->base, $filter,
+        ['dn', 'fdSupannRessourceLabel', 'fdSupannCiviliteLabel', 'fdSupannConsentTypeLabel', 'fdSupannConsentObjectLabel']);
+    $ldap->assert();
+
+    $count = 0;
+    foreach ($ldap as $dn => $attrs) {
+      $oldLabel = $attrs['fdSupannRessourceLabel'][0]
+                ?? $attrs['fdSupannCiviliteLabel'][0]
+                ?? $attrs['fdSupannConsentTypeLabel'][0]
+                ?? $attrs['fdSupannConsentObjectLabel'][0]
+                ?? NULL;
+      if ($oldLabel === NULL) {
+        continue;
+      }
+
+      echo "Migrating $dn: setting fdSupannLabel='$oldLabel'\n";
+
+      try {
+        $result = $this->ldap->mod_add($dn, ['fdSupannLabel' => $oldLabel]);
+        $result->assert();
+
+        if (!empty($attrs['fdSupannRessourceLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannRessourceLabel' => []]);
+          $result->assert();
+        }
+        if (!empty($attrs['fdSupannCiviliteLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannCiviliteLabel' => []]);
+          $result->assert();
+        }
+        if (!empty($attrs['fdSupannConsentTypeLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannConsentTypeLabel' => []]);
+          $result->assert();
+        }
+        if (!empty($attrs['fdSupannConsentObjectLabel'])) {
+          $result = $this->ldap->mod_del($dn, ['fdSupannConsentObjectLabel' => []]);
+          $result->assert();
+        }
+
+        $count++;
+      } catch (Exception $e) {
+        echo "Failed to migrate $dn: " . $e->getMessage() . "\n";
+      }
+    }
+
+    echo "Migrated $count entries to fdSupannLabel\n";
   }
 
   /**
