@@ -813,7 +813,7 @@ class Migration extends Cli\LdapApplication
                   $attrs = [
                     'objectClass'               => 'fdSupannConsentObject',
                     'fdSupannConsentObjectName'  => $object,
-                    'fdSupannConsentObjectLabel' => $label,
+                    'fdSupannLabel' => $label,
                   ];
                   echo 'Adding consent object ' . $dn . "\n";
                   $result = $this->ldap->add($dn, $attrs);
@@ -836,7 +836,7 @@ class Migration extends Cli\LdapApplication
                   $attrs = [
                     'objectClass'              => 'fdSupannConsentType',
                     'fdSupannConsentTypeName'  => $type,
-                    'fdSupannConsentTypeLabel' => $label,
+                    'fdSupannLabel' => $label,
                   ];
                   echo 'Adding consent type ' . $dn . "\n";
                   $result = $this->ldap->add($dn, $attrs);
