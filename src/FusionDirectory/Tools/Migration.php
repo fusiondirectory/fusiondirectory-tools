@@ -550,6 +550,28 @@ class Migration extends Cli\LdapApplication
         }
       }
 
+      // Add default supannCivilite
+      $mainCivilite = [
+        "Mme" => "Mme",
+        "M."  => "M.",
+      ];
+
+      foreach ($mainCivilite as $civilite => $label) {
+        $dn    = 'fdSupannCiviliteName=' . $civilite .',ou=civilite,ou=supannobjects,' . $this->base;
+        echo 'Adding civilite ' . $dn . "\n";
+        $attrs = [
+          'objectClass'            => 'fdSupannCivilite',
+          'fdSupannCiviliteName'      => $civilite,
+          'fdSupannLabel' => $label,
+        ];
+        try {
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+        } catch (Exception $e) {
+          echo 'Failed to add default civilite "' . $dn . '": ' . $e->getMessage() . "\n";
+        }
+      }
+
       // Add COMPTE and MAIL ressource
       $mainRessources = [
         "COMPTE" => "Compte",
@@ -564,8 +586,12 @@ class Migration extends Cli\LdapApplication
           'fdSupannRessourceName'  => $resource,
           'fdSupannLabel' => $label,
         ];
-        $result = $this->ldap->add($dn, $attrs);
-        $result->assert();
+        try {
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+        } catch (Exception $e) {
+          echo 'Failed to add default ressources "' . $dn . '": ' . $e->getMessage() . "\n";
+        }
       }
 
       // Add default states
@@ -583,8 +609,12 @@ class Migration extends Cli\LdapApplication
           'fdSupannStateName'      => $state,
           'fdSupannLabel' => $label,
         ];
-        $result = $this->ldap->add($dn, $attrs);
-        $result->assert();
+        try {
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+        } catch (Exception $e) {
+          echo 'Failed to add default states "' . $dn . '": ' . $e->getMessage() . "\n";
+        }
       }
 
       // Label array for matching substate and label
@@ -613,24 +643,6 @@ class Migration extends Cli\LdapApplication
         "S" => ["SupannVerrouille", "SupannVerrouAdministratif", "SupannVerrouTechnique"]
       ];
 
-      // Add default supannCivilite
-      $mainCivilite = [
-        "Mme" => "Mme",
-        "M."  => "M.",
-      ];
-
-      foreach ($mainCivilite as $civilite => $label) {
-        $dn    = 'fdSupannCiviliteName=' . $state .',ou=civilite,ou=supannobjects,' . $this->base;
-        echo 'Adding civilite ' . $dn . "\n";
-        $attrs = [
-          'objectClass'            => 'fdSupannCivilite',
-          'fdSupannCiviliteName'      => $civilite,
-          'fdSupannLabel' => $label,
-        ];
-        $result = $this->ldap->add($dn, $attrs);
-        $result->assert();
-      }
-
       // Complete the substateLabels with fdSupannRessourceSubStatesLabels
       if ($list->count() > 0) {
         echo 'Complete substateLabels with fdSupannRessourceSubStatesLabels' . "\n";
@@ -658,9 +670,12 @@ class Migration extends Cli\LdapApplication
             'fdSupannSubStateName'   => $substate,
             'fdSupannLabel'          => $substateLabel,
           ];
-
-          $result = $this->ldap->add($dn, $attrs);
-          $result->assert();
+          try {
+            $result = $this->ldap->add($dn, $attrs);
+            $result->assert();
+          } catch (Exception $e) {
+            echo 'Failed to add default substates "' . $dn . '": ' . $e->getMessage() . "\n";
+          }
         }
 
         foreach ($stateSubstateLink as $state => $subStateArray) {
@@ -668,10 +683,14 @@ class Migration extends Cli\LdapApplication
             // Add substate to the correct state
             $dnState = 'fdSupannStateName=' . $state .',ou=states,ou=supannobjects,' . $this->base;
             echo 'Link substate ' . $substate . ' for state ' . $state . PHP_EOL;
-            $result = $this->ldap->mod_add($dnState, [
-              "fdSupannSubStateList" => 'fdSupannSubStateName=' . $substate .',ou=substates,ou=supannobjects,' . $this->base
-            ]);
-            $result->assert();
+            try {
+              $result = $this->ldap->mod_add($dnState, [
+                "fdSupannSubStateList" => 'fdSupannSubStateName=' . $substate .',ou=substates,ou=supannobjects,' . $this->base
+              ]);
+              $result->assert();
+            } catch (Exception $e) {
+              echo 'Failed to add link or default substates "' . $dn . '": ' . $e->getMessage() . "\n";
+            }
           }
         }
       }
