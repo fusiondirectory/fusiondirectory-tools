@@ -591,6 +591,59 @@ class Migration extends Cli\LdapApplication
         }
       }
 
+      // Add default supannConsentementsObjects
+      $mainConsentementsObjects = [
+        "JPEGPHOTO"       => "Photo",
+        "MAIL"            => "Email",
+        "MOBILE"          => "Mobile",
+        "SUPANNMAILPERSO" => "Supann e-mail personnel"
+      ];
+
+      foreach ($mainConsentementsObjects as $consentObject => $label) {
+        $dn    = 'fdSupannConsentObjectName=' . $consentObject .',ou=consent,ou=supannobjects,' . $this->base;
+        echo 'Adding civilite ' . $dn . "\n";
+        $attrs = [
+          'objectClass'               => 'fdSupannConsentObject',
+          'fdSupannConsentObjectName' => $consentObject,
+          'fdSupannLabel'             => $label,
+        ];
+        try {
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+        } catch (Exception $e) {
+          echo 'Failed to add default consentObject "' . $dn . '": ' . $e->getMessage() . "\n";
+        }
+      }
+
+      // Add default supannConsentementsTypes
+      $mainConsentementsTypes = [
+        "PUBLIC"     => "Publique",
+        "AUTH"       => "Authentification",
+        "PR"         => "Personnes ressources",
+        "APPRENANTS" => "Apprenants",
+        "INTERNE"    => "Interne",
+        "EDUGAIN"    => "EduGAIN",
+        "FER"        => "Fédération",
+        "CGU"        => "Cgu",
+        "JPEGPHOTO"  => "Photo"
+      ];
+
+      foreach ($mainConsentementsTypes as $consentType => $label) {
+        $dn    = 'fdSupannConsentTypeName=' . $consentType .',ou=consent,ou=supannobjects,' . $this->base;
+        echo 'Adding civilite ' . $dn . "\n";
+        $attrs = [
+          'objectClass'             => 'fdSupannConsentType',
+          'fdSupannConsentTypeName' => $consentType,
+          'fdSupannLabel'           => $label,
+        ];
+        try {
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+        } catch (Exception $e) {
+          echo 'Failed to add default consentType "' . $dn . '": ' . $e->getMessage() . "\n";
+        }
+      }
+
       // Add COMPTE and MAIL ressource
       $mainRessources = [
         "COMPTE" => "Compte",
@@ -800,7 +853,7 @@ class Migration extends Cli\LdapApplication
                     $name  = explode(':', $entry)[0];
                     $label = explode(':', $entry)[1];
 
-                    $dn    = 'fdSupannConsentObjectName=' . $name .',ou=ressources,ou=consent,' . $this->base;
+                    $dn    = 'fdSupannConsentObjectName=' . $name .',ou=consent,ou=supannobjects,' . $this->base;
                     $attrs = [
                       'objectClass'                => 'fdSupannConsentObject',
                       'fdSupannConsentObjectName'  => $name,
@@ -813,7 +866,7 @@ class Migration extends Cli\LdapApplication
                     $name  = explode(':', $entry)[0];
                     $label = explode(':', $entry)[1];
 
-                    $dn    = 'fdSupannConsentTypeName=' . $name .',ou=ressources,ou=consent,' . $this->base;
+                    $dn    = 'fdSupannConsentTypeName=' . $name .',ou=consent,ou=supannobjects,' . $this->base;
                     $attrs = [
                       'objectClass'                => 'fdSupannConsentType',
                       'fdSupannConsentTypeName'    => $name,
