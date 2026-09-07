@@ -592,7 +592,7 @@ class Migration extends Cli\LdapApplication
         } catch (Exception $e) {
           echo 'Failed to add default ressources "' . $dn . '": ' . $e->getMessage() . "\n";
         }
-        }
+      }
 
       // Add default states
       $mainStates = [
