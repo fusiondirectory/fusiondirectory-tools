@@ -797,7 +797,7 @@ class Migration extends Cli\LdapApplication
                     $result = $this->ldap->add($dn, $attrs);
                     $result->assert();
                   } else if ($key == 'fdSupannConsentementObjects') {
-                    $name =  explode(':', $entry)[0];
+                    $name  = explode(':', $entry)[0];
                     $label = explode(':', $entry)[1];
 
                     $dn    = 'fdSupannConsentObjectName=' . $name .',ou=ressources,ou=consent,' . $this->base;
@@ -810,7 +810,7 @@ class Migration extends Cli\LdapApplication
                     $result = $this->ldap->add($dn, $attrs);
                     $result->assert();
                   } else if ($key == 'fdSupannConsentementTypes') {
-                    $name =  explode(':', $entry)[0];
+                    $name  = explode(':', $entry)[0];
                     $label = explode(':', $entry)[1];
 
                     $dn    = 'fdSupannConsentTypeName=' . $name .',ou=ressources,ou=consent,' . $this->base;
