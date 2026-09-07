@@ -2,7 +2,7 @@
 /*
   This code is part of FusionDirectory (https://www.fusiondirectory.org/)
 
-  Copyright (C) 2020-2021 FusionDirectory
+  Copyright (C) 2020-2026 FusionDirectory
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -499,6 +499,22 @@ class Migration extends Cli\LdapApplication
         echo "Exception: " . $e->getMessage() . PHP_EOL;
       }
 
+      try {
+        $ou        = 'ou=civilite,ou=supannobjects';
+        $ouName    = 'civilite';
+        echo 'Create ou=civilite,ou=supannobjects branch' . "\n";
+        $branchAdd = $this->ldap->add(
+          $ou . ',' . $this->base,
+          [
+            'ou'          => $ouName,
+            'objectClass' => 'organizationalUnit',
+          ]
+        );
+        $branchAdd->assert();
+      } catch (Exception $e) {
+        echo "Exception: " . $e->getMessage() . PHP_EOL;
+      }
+
       // Track processed population codes to avoid duplicates between defaults and config
       $processedPopulationCodes = [];
 
@@ -596,6 +612,24 @@ class Migration extends Cli\LdapApplication
         ],
         "S" => ["SupannVerrouille", "SupannVerrouAdministratif", "SupannVerrouTechnique"]
       ];
+
+      // Add default supannCivilite
+      $mainCivilite = [
+        "Mme" => "Mme",
+        "M."  => "M.",
+      ];
+
+      foreach ($mainCivilite as $civilite => $label) {
+        $dn    = 'fdSupannCiviliteName=' . $state .',ou=civilite,ou=supannobjects,' . $this->base;
+        echo 'Adding civilite ' . $dn . "\n";
+        $attrs = [
+          'objectClass'            => 'fdSupannCivilite',
+          'fdSupannCiviliteName'      => $civilite,
+          'fdSupannLabel' => $label,
+        ];
+        $result = $this->ldap->add($dn, $attrs);
+        $result->assert();
+      }
 
       // Complete the substateLabels with fdSupannRessourceSubStatesLabels
       if ($list->count() > 0) {
