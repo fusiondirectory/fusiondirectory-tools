@@ -601,7 +601,7 @@ class Migration extends Cli\LdapApplication
 
       foreach ($mainConsentementsObjects as $consentObject => $label) {
         $dn    = 'fdSupannConsentObjectName=' . $consentObject .',ou=consent,ou=supannobjects,' . $this->base;
-        echo 'Adding civilite ' . $dn . "\n";
+        echo 'Adding consentObject ' . $dn . "\n";
         $attrs = [
           'objectClass'               => 'fdSupannConsentObject',
           'fdSupannConsentObjectName' => $consentObject,
@@ -624,13 +624,12 @@ class Migration extends Cli\LdapApplication
         "INTERNE"    => "Interne",
         "EDUGAIN"    => "EduGAIN",
         "FER"        => "Fédération",
-        "CGU"        => "Cgu",
-        "JPEGPHOTO"  => "Photo"
+        "CGU"        => "Cgu"
       ];
 
       foreach ($mainConsentementsTypes as $consentType => $label) {
         $dn    = 'fdSupannConsentTypeName=' . $consentType .',ou=consent,ou=supannobjects,' . $this->base;
-        echo 'Adding civilite ' . $dn . "\n";
+        echo 'Adding consentType ' . $dn . "\n";
         $attrs = [
           'objectClass'             => 'fdSupannConsentType',
           'fdSupannConsentTypeName' => $consentType,
