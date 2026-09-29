@@ -2,29 +2,29 @@
 <?php
 
 declare(strict_types=1);
-require "/usr/share/php/Dotenv/autoload.php"; 
+require "/usr/share/php/Dotenv/autoload.php";
 
 class OrchestratorClient
 {
   private bool $verbose, $debug;
   private string $loginEndPoint, $emailEndPoint, $tasksEndPoint, $lifeCycleEndPoint, $logging,
     $removeSubTasksEndPoint, $notificationsEndPoint, $archiveEndPoint, $automaticGroupsEndPoint;
-  private string $activateCyclicTasksEndPoint, $extractorEndPoint;
+  private string $activateCyclicTasksEndPoint, $exportEndPoint;
   private string $restartFailedTasksEndPoint; // new endpoint for restarting failed subtasks
   private array $loginData, $listOfArguments;
   private ?string $accessToken;
-  private ?string $extractorPath;
+  private ?string $exportPath;
   private ?string $auditType;
-  private ?string $automaticGroupsType; 
+  private ?string $automaticGroupsType;
   private ?string $restartFailedTaskName; // optional task name to scope restart
 
   public function __construct ()
   {
     // Tokens details
     $this->accessToken = NULL;
-    $this->extractorPath = NULL;
+    $this->exportPath = NULL;
     $this->auditType = NULL;
-    $this->automaticGroupsType = NULL; 
+    $this->automaticGroupsType = NULL;
     $this->restartFailedTaskName = NULL; // init
 
     // App details
@@ -38,7 +38,7 @@ class OrchestratorClient
     $dotenv->load();
 
     $this->listOfArguments = ['--help', '--verbose', '--debug', '--emails', '--tasks',
-      '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder', '--archive', '--extractor', '--automatic-groups',
+      '--lifecycle', '--remove', '--log', '--activate', '--notifications', '--audit', '--reminder', '--archive', '--export', '--automatic-groups',
       '--restart-failed-tasks'];
 
     $orchestratorFQDN        = $_ENV["ORCHESTRATOR_API_URL"];
@@ -50,7 +50,7 @@ class OrchestratorClient
     $this->auditEndPoint = $this->tasksEndPoint . 'audit';
     $this->reminderEndPoint = $this->tasksEndPoint . 'reminder';
     $this->archiveEndPoint = $this->tasksEndPoint . 'archive';
-    $this->extractorEndPoint = $this->tasksEndPoint . 'extractor';
+    $this->exportEndPoint = $this->tasksEndPoint . 'export';
     $this->automaticGroupsEndPoint = $this->tasksEndPoint . 'automaticGroups';
     // Only remove completed sub-tasks
     $this->removeSubTasksEndPoint = $this->tasksEndPoint . 'removeSubTasks';
@@ -125,23 +125,23 @@ class OrchestratorClient
       $tokens = $this->getAccessToken();
       // Create an object from the JSON string received.
       $tokens = json_decode($tokens);
-      
+
       // Check if token retrieval was successful
       if (!is_object($tokens) || !isset($tokens->access_token)) {
         $errorCode = '';
         $errorMessage = '';
-        
+
         // Check if it's a JSON error response with authentication issues
         if (is_object($tokens) && isset($tokens->message)) {
           $responseMessage = strtolower($tokens->message);
-          
+
           // Check for credential-related errors in the response message
           if (strpos($responseMessage, 'invalid credentials') !== false || strpos($responseMessage, 'unable to bind') !== false) {
             $errorMessage = 'Authentication failed: Invalid username or password for orchestrator.';
           } else {
             $errorMessage = 'Authentication error: ' . $tokens->message;
           }
-        } 
+        }
         // Extract error code from response if it's an HTML error page
         else if (is_string($tokens) && strpos($tokens, '<!DOCTYPE HTML') !== false) {
           preg_match('/<title>(\d+)[^<]*<\/title>/', $tokens, $matches);
@@ -149,12 +149,12 @@ class OrchestratorClient
             $errorCode = ' (Error code: ' . $matches[1] . ')';
           }
           $errorMessage = 'The access token could not be retrieved, potentially the URL endpoint for orchestrator is wrong' . $errorCode . '.';
-        } 
+        }
         // Default error message
         else {
           $errorMessage = 'The access token could not be retrieved. Please check orchestrator URL and credentials.';
         }
-        
+
         echo $errorMessage . PHP_EOL;
         $this->logToFile($errorMessage);
         exit(1);
@@ -181,7 +181,7 @@ class OrchestratorClient
 
     $result = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    
+
     // Check if we got a successful response
     if ($httpCode != 200) {
       $errorMessage = "Failed to retrieve tasks. Server returned HTTP code: $httpCode";
@@ -191,7 +191,7 @@ class OrchestratorClient
       curl_close($ch);
       return;
     }
-    
+
     $tasks = json_decode(curl_multi_getcontent($ch), TRUE);
 
     unset($tasks['count']);
@@ -250,7 +250,7 @@ class OrchestratorClient
       case 'audit':
         $ch = curl_init($this->auditEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-        
+
         // Add audit type as JSON data if provided
         if ($this->auditType !== NULL) {
           $jsonData = json_encode(['type' => $this->auditType]);
@@ -261,28 +261,28 @@ class OrchestratorClient
         $ch = curl_init($this->reminderEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
-      case 'archive': 
+      case 'archive':
         $ch = curl_init($this->archiveEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
       case 'automatic-groups':
         $ch = curl_init($this->automaticGroupsEndPoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-        
+
         // Add automatic groups type as JSON data if provided
         if ($this->automaticGroupsType !== NULL) {
           $jsonData = json_encode(['type' => $this->automaticGroupsType]);
           curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
         }
         break;
-      case 'extractor':
-        $endpoint = $this->extractorEndPoint;
+      case 'export':
+        $endpoint = $this->exportEndPoint;
         $ch = curl_init($endpoint);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PATCH');
-        
+
         // Add path as JSON data if provided
-        if ($this->extractorPath !== NULL) {
-          $jsonData = json_encode(['path' => $this->extractorPath]);
+        if ($this->exportPath !== NULL) {
+          $jsonData = json_encode(['path' => $this->exportPath]);
           curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
         }
         break;
@@ -298,14 +298,14 @@ class OrchestratorClient
       curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
       $result = curl_exec($ch);
       $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-      
+
       // Check if we got a successful response
       if ($httpCode < 200 || $httpCode >= 300) {
         $errorMessage = "Operation failed for $taskType task. Server returned HTTP code: $httpCode";
         echo $errorMessage . PHP_EOL;
         $this->logToFile($errorMessage);
       }
-      
+
       $this->showCurlDetails($ch);
       curl_close($ch);
     }
@@ -382,12 +382,12 @@ class OrchestratorClient
         case '--archive':
           $tasksToBeExecuted[] = 'archive';
           break;
-        case '--extractor':
+        case '--export':
           if (isset($args[$index + 1]) && substr($args[$index + 1], 0, 1) !== "-") {
-            $this->extractorPath = $args[$index + 1];
+            $this->exportPath = $args[$index + 1];
             $skipNext = TRUE;
           }
-          $tasksToBeExecuted[] = 'extractor';
+          $tasksToBeExecuted[] = 'export';
           break;
         case '--automatic-groups':
           if (isset($args[$index + 1]) && substr($args[$index + 1], 0, 1) !== "-") {
@@ -448,8 +448,8 @@ class OrchestratorClient
         case 'automatic-groups' :
           $this->subTaskExec('automatic-groups');
           break;
-        case 'extractor':
-          $this->subTaskExec('extractor');
+        case 'export':
+          $this->subTaskExec('export');
           break;
       }
     }
@@ -495,7 +495,7 @@ class OrchestratorClient
     --log                         : Allows different logging path (Default is /var/log/orchestrator/orchestrator.log)." . PHP_EOL . "
     --audit [type]                : Manage audit logs with optional type (standard or syslog)" . PHP_EOL . "
     --archive                     : Execute subtasks of type archive" . PHP_EOL . "
-    --extractor [path]            : Execute subtasks of type extractor with optional path (Default is /srv/orchestrator/)." . PHP_EOL . "
+    --export [path]               : Execute subtasks of type export with optional path (Default is /srv/orchestrator/)." . PHP_EOL . "
     --tasks                       : Show all tasks." . PHP_EOL;
 
     exit;
