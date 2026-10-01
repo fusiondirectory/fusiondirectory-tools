@@ -762,6 +762,8 @@ class Migration extends Cli\LdapApplication
 
         echo 'Adding default population code ' . $dn . "\n";
         try {
+          // Probably type error because value['eduPersonAffiliation'] is also an array
+          // @phpstan-ignore argument.type
           $result = $this->ldap->add($dn, $attrs);
           $result->assert();
         } catch (Exception $e) {
