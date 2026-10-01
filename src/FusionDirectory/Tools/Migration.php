@@ -539,25 +539,225 @@ class Migration extends Cli\LdapApplication
 
       // Add default population codes (from old setBasicMainCodes())
       $defaultPopulationCodes = [
-        '{SUPANN}P', '{SUPANN}PX', '{SUPANN}PXE', '{SUPANN}PXL', '{SUPANN}PXR', '{SUPANN}PXSP', '{SUPANN}PXU',
-        '{SUPANN}R',
-        '{SUPANN}RG', '{SUPANN}RGI', '{SUPANN}RGIE', '{SUPANN}RGIS', '{SUPANN}RGN',
-        '{SUPANN}RGNC', '{SUPANN}RGNCC', '{SUPANN}RGNCD', '{SUPANN}RGNE', '{SUPANN}RGNF',
-        '{SUPANN}RGNFA', '{SUPANN}RGNFC', '{SUPANN}RGNFD', '{SUPANN}RGNS', '{SUPANN}RGNSP',
-        '{SUPANN}RGP', '{SUPANN}RGPE', '{SUPANN}RGPET', '{SUPANN}RGPF', '{SUPANN}RGPFT', '{SUPANN}RGPST',
-        '{SUPANN}RHTC', '{SUPANN}RHTCE', '{SUPANN}RHJCF', '{SUPANN}RHJSG', '{SUPANN}RHLE',
-        '{SUPANN}RHLS', '{SUPANN}RHMF', '{SUPANN}RHTSO',
-        '{SUPANN}TER',
+        '{SUPANN}PX' => [
+          'label' => 'Enseignant externe',
+          'eduPersonAffiliation' => ['affiliate', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'affiliate',
+          'weight' => 200
+        ],
+        '{SUPANN}PXL' => [
+          'label' => 'Lecteur de bibliothèque',
+          'eduPersonAffiliation' => ['registered-reader'],
+          'eduPersonPrimaryAffiliation' => 'registered-reader',
+          'weight' => 190
+        ],
+        '{SUPANN}PXR' => [
+          'label' => 'Retraité',
+          'eduPersonAffiliation' => ['retired'],
+          'eduPersonPrimaryAffiliation' => 'retired',
+          'weight' => 220
+        ],
+        '{SUPANN}PXSP' => [
+          'label' => 'Prestataire externe',
+          'eduPersonAffiliation' => ['affiliate'],
+          'eduPersonPrimaryAffiliation' => 'affiliate',
+          'weight' => 280
+        ],
+        '{SUPANN}PXU' => [
+          'label' => 'Utilisateur hébergé',
+          'eduPersonAffiliation' => ['affiliate'],
+          'eduPersonPrimaryAffiliation' => 'affiliate',
+          'weight' => 200
+        ],
+        '{SUPANN}RG' => [
+          'label' => 'Personnel géré',
+          'eduPersonAffiliation' => ['employee'],
+          'eduPersonPrimaryAffiliation' => 'employee',
+          'weight' => 0
+        ],
+        '{SUPANN}RGI' => [
+          'label' => 'Personnel géré intérimaire',
+          'eduPersonAffiliation' => ['employee', 'member'],
+          'eduPersonPrimaryAffiliation' => 'member',
+          'weight' => 700
+        ],
+        '{SUPANN}RGIE' => [
+          'label' => 'Enseignant vacataire',
+          'eduPersonAffiliation' => ['employee', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'teacher',
+          'weight' => 700
+        ],
+        '{SUPANN}RGIS' => [
+          'label' => 'Contractuel administratif saisonnier',
+          'eduPersonAffiliation' => ['employee', 'member', 'staff'],
+          'eduPersonPrimaryAffiliation' => 'staff',
+          'weight' => 700
+        ],
+        '{SUPANN}RGN' => [
+          'label' => 'Personnel géré non-permanent',
+          'eduPersonAffiliation' => ['employee', 'member'],
+          'eduPersonPrimaryAffiliation' => 'member',
+          'weight' => 750
+        ],
+        '{SUPANN}RGNC' => [
+          'label' => 'Chercheur non-permanent',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'researcher', 'member'],
+          'eduPersonPrimaryAffiliation' => 'researcher',
+          'weight' => 750
+        ],
+        '{SUPANN}RGNCC' => [
+          'label' => 'Contractuel recherche non- doctorant sans enseignement',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'researcher', 'member'],
+          'eduPersonPrimaryAffiliation' => 'researcher',
+          'weight' => 750
+        ],
+        '{SUPANN}RGNCD' => [
+          'label' => 'Doctorant Contractuel sans enseignement',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'researcher', 'member'],
+          'eduPersonPrimaryAffiliation' => 'researcher',
+          'weight' => 750
+        ],
+        '{SUPANN}RGNE' => [
+          'label' => 'Enseignant non-permanent',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 750
+        ],
+
+        '{SUPANN}RGNF' => [
+          'label' => 'Enseignant-chercheur non-permanent',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'researcher', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 750
+        ],
+        '{SUPANN}RGNFA' => [
+          'label' => 'Professeur associé',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'researcher', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 750
+        ],
+        '{SUPANN}RGNFC' => [
+          'label' => 'Contractuel recherche non-doctorant avec enseignement',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'researcher', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 750
+        ],
+        '{SUPANN}RGNFD' => [
+          'label' => 'Doctorant Contractuel avec enseignement',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'researcher', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 750
+        ],
+        '{SUPANN}RGNS' => [
+          'label' => 'Personnel administratif ou technique non-permanent',
+          'eduPersonAffiliation' => ['employee', 'member', 'staff'],
+          'eduPersonPrimaryAffiliation' => 'staff',
+          'weight' => 750
+        ],
+        '{SUPANN}RGNSP' => [
+          'label' => 'Apprenti',
+          'eduPersonAffiliation' => ['employee', 'member', 'staff'],
+          'eduPersonPrimaryAffiliation' => 'staff',
+          'weight' => 750
+        ],
+        '{SUPANN}RGP' => [
+          'label' => 'Personnel géré permanent',
+          'eduPersonAffiliation' => ['employee', 'member'],
+          'eduPersonPrimaryAffiliation' => 'member',
+          'weight' => 800
+        ],
+        '{SUPANN}RGPE' => [
+          'label' => 'Enseignant',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 750
+        ],
+        '{SUPANN}RGPET' => [
+          'label' => 'Enseignant titulaire',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 750
+        ],
+        '{SUPANN}RGPF' => [
+          'label' => 'Enseignant-chercheur',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'researcher', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 800
+        ],
+        '{SUPANN}RGPFT' => [
+          'label' => 'Enseignant-chercheur titulaire',
+          'eduPersonAffiliation' => ['faculty', 'employee', 'researcher', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 800
+        ],
+        '{SUPANN}RGPST' => [
+          'label' => 'Personnel administratif ou technique titulaire',
+          'eduPersonAffiliation' => ['employee', 'member', 'staff'],
+          'eduPersonPrimaryAffiliation' => 'staff',
+          'weight' => 800
+        ],
+
+        '{SUPANN}RHTC' => [
+          'label' => 'Chercheur co-tutélaire',
+          'eduPersonAffiliation' => ['faculty', 'researcher', 'member'],//fuck
+          'eduPersonPrimaryAffiliation' => 'researcher',
+          'weight' => 780
+        ],
+        '{SUPANN}RHTCE' => [
+          'label' => 'Chercheur EPSCP hébergé',
+          'eduPersonAffiliation' => ['faculty', 'researcher', 'member'],
+          'eduPersonPrimaryAffiliation' => 'researcher',
+          'weight' => 780
+        ],
+        '{SUPANN}RHJCF' => [
+          'label' => 'Apprenant chercheur hébergé',
+          'eduPersonAffiliation' => ['faculty', 'researcher', 'member'],
+          'eduPersonPrimaryAffiliation' => 'researcher',
+          'weight' => 580
+        ],
+        '{SUPANN}RHJSG' => [
+          'label' => 'Stagiaire hébergé',
+          'eduPersonAffiliation' => ['member', 'staff'],
+          'eduPersonPrimaryAffiliation' => 'staff',
+          'weight' => 580
+        ],
+        '{SUPANN}RHLE' => [
+          'label' => 'Enseignant sous convention',
+          'eduPersonAffiliation' => ['faculty', 'member', 'teacher'],
+          'eduPersonPrimaryAffiliation' => 'faculty',
+          'weight' => 720
+        ],
+        '{SUPANN}RHLS' => [
+          'label' => 'Personnel administratif ou technique sous convention',
+          'eduPersonAffiliation' => ['member', 'staff'],
+          'eduPersonPrimaryAffiliation' => 'staff',
+          'weight' => 720
+        ],
+        '{SUPANN}RHMF' => [
+          'label' => 'Émérite',
+          'eduPersonAffiliation' => ['faculty', 'researcher', 'emeritus', 'member'],
+          'eduPersonPrimaryAffiliation' => 'staff',
+          'weight' => 780
+        ],
+        '{SUPANN}RHTSO' => [
+          'label' => "Personnel administratif ou technique d'organisme de recherche",
+          'eduPersonAffiliation' => ['member', 'staff'],
+          'eduPersonPrimaryAffiliation' => 'staff',
+          'weight' => 780
+        ],
       ];
 
-      foreach ($defaultPopulationCodes as $code) {
+      foreach ($defaultPopulationCodes as $code => $value) {
         $processedPopulationCodes[$code] = TRUE;
 
         $dn    = 'fdSupannPopulationCodeName=' . $code . ',ou=populationcodes,ou=supannobjects,' . $this->base;
         $attrs = [
-          'objectClass'                => 'fdSupannPopulationCode',
+          'objectClass' => 'fdSupannPopulationCode',
           'fdSupannPopulationCodeName' => $code,
-          'fdSupannLabel'              => $code,
+          'fdSupannLabel' => $value['label'],
+          'fdSupannPopulationEduPersonAffiliation' => $value['eduPersonAffiliation'],
+          'fdSupannPopulationEduPersonPrimaryAffiliation' => $value['eduPersonPrimaryAffiliation'],
+          'fdSupannPopulationCodeWeight' => $value['weight'],
         ];
 
         echo 'Adding default population code ' . $dn . "\n";
