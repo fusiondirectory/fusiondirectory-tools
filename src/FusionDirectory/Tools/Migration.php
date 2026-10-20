@@ -54,6 +54,10 @@ class Migration extends Cli\LdapApplication
           'help'    => 'Migrating your Supann Objects',
           'command' => 'cmdMigrateSupannObjects',
         ],
+        'migrate-supannlists:'      => [
+          'help'    => 'Migrating your Supann Lists to Supann Objects',
+          'command' => 'cmdMigrateSupannLists',
+        ],
         'migrate-supann-labels'  => [
           'help'    => 'Migrate supann label attributes to generic fdSupannLabel',
           'command' => 'cmdMigrateSupannLabelAttributes',
@@ -95,6 +99,11 @@ class Migration extends Cli\LdapApplication
     if (isset($this->getopt['set-var']) && !empty($this->getopt['set-var'])) {
       $this->cmdSetVar($this->getopt['set-var']);
       unset($this->getopt['set-var']);
+    }
+
+    if (isset($this->getopt['migrate-supannlists']) && !empty($this->getopt['migrate-supannlists'])) {
+      $this->cmdMigrateSupannLists($this->getopt['migrate-supannlists']);
+      unset($this->getopt['migrate-supannlists']);
     }
 
     $this->runCommands();
@@ -1106,6 +1115,125 @@ class Migration extends Cli\LdapApplication
          . $e->getMessage() . "\n";
     }
   }
+
+  /**
+   * Migrate SupannLists to SupannObjects
+   * @param string filepath filepath that we will migrate in Supann Objects
+   * @throws Exception
+   */
+  protected function cmdMigrateSupannLists ($filepath): void
+  {
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception | SodiumException $e) {
+    }
+
+    if ($this->verbose()) {
+      printf('Reading $filepath' . "\n");
+    }
+
+    try {
+      $ou        = 'ou=supannlists';
+      $ouName    = 'supannlists';
+      echo 'Create ou=supannlists branch' . "\n";
+      $branchAdd = $this->ldap->add(
+        $ou . ',' . $this->base,
+        [
+          'ou'          => $ouName,
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+      $branchAdd->assert();
+    } catch (Exception $e) {
+      echo "Exception: " . $e->getMessage() . PHP_EOL;
+    }
+
+    if (($handle = fopen($filepath, "r")) !== FALSE) {
+      $dnsLists = [];
+      while (($fields = fgetcsv($handle, NULL, ";", "\"", "\\")) !== FALSE) {
+        // Skip line with # at beginning
+        if (str_starts_with($fields[0], "#")) {
+          continue;
+        }
+
+        // Process based on filename
+        $filename = basename($filepath);
+
+        // Activite
+        if (strpos($filename, "activite") !== FALSE) {
+          try {
+            $ou        = 'ou=activite';
+            $ouName    = 'activite';
+            echo 'Create ou=supannlists branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=activite,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupannActivite";
+        }
+
+        // Create object in LDAP
+        $dn    = 'fdSupannName={' . $prefix . '}' . $name . ',' . $rdn . $this->base;
+        $attrs = [
+          'objectClass'   => $objectClass,
+          'fdSupannName'  => '{' . $prefix . '}' . $name,
+          'fdSupannLabel' => $label
+        ];
+
+        try {
+          echo 'Create ' . $dn . "\n";
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+          
+          // Add $dn to $dnsList
+          $dnsLists[] = $dn;
+        } catch (Exception $e) {
+          echo "Failed to add $dn:" . $e->getMessage() . "\n";
+        }
+      }
+
+      fclose($handle);
+
+      // Create the supannPrefix that link all the supannLists together
+      try {
+        $dn    = 'fdSupannName=' . $prefix . ',' . 'ou=prefix,ou=supannlists,' . $this->base;
+
+        // Remove the array if there is only 1 element
+        if (count($dnsLists) == 1) {
+          $dnsLists = $dnsLists[0];
+        }
+
+        $attrs = [
+          'objectClass'   => 'fdSupannPrefix',
+          'fdSupannName'  => $prefix,
+          'fdSupannLabel' => $prefix,
+          'fdSupannList'  => $dnsLists 
+        ];
+
+        echo 'Create ' . $dn . "\n";
+
+        // Probably type error because dnsList is also an array
+        // @phpstan-ignore argument.type
+        $result = $this->ldap->add($dn, $attrs);
+        $result->assert();
+      } catch (Exception $e) {
+        echo "Failed to add $dn:" . $e->getMessage() . "\n";
+      }
+    }
+  }
+
 
   /**
    * Migrate supann label attributes from fdSupannRessourceLabel/fdSupannCiviliteLabel to generic fdSupannLabel
