@@ -1159,12 +1159,12 @@ class Migration extends Cli\LdapApplication
         // Process based on filename
         $filename = basename($filepath);
 
-        // Activite
         if (strpos($filename, "activite") !== FALSE) {
+          // Activite
           try {
             $ou        = 'ou=activite';
             $ouName    = 'activite';
-            echo 'Create ou=supannlists branch' . "\n";
+            echo 'Create ou=activite branch' . "\n";
             $branchAdd = $this->ldap->add(
               $ou . ',ou=supannlists,' . $this->base,
               [
@@ -1177,11 +1177,36 @@ class Migration extends Cli\LdapApplication
             echo "Exception: " . $e->getMessage() . PHP_EOL;
           }
 
+          $type        = explode('_', $filename)[0];
           $prefix      = explode('_', $filename)[1];
           $rdn         = "ou=activite,ou=supannlists,";
           $name        = $fields[0];
           $label       = $fields[1];
           $objectClass = "fdSupannActivite";
+        } else if (strpos($filename, "corps") !== FALSE) {
+          // Corps
+          try {
+            $ou        = 'ou=corps';
+            $ouName    = 'corps';
+            echo 'Create ou=corps branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=corps,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupannCorps";
         }
 
         // Create object in LDAP
@@ -1196,7 +1221,7 @@ class Migration extends Cli\LdapApplication
           echo 'Create ' . $dn . "\n";
           $result = $this->ldap->add($dn, $attrs);
           $result->assert();
-          
+
           // Add $dn to $dnsList
           $dnsLists[] = $dn;
         } catch (Exception $e) {
@@ -1216,7 +1241,10 @@ class Migration extends Cli\LdapApplication
         }
 
         $attrs = [
-          'objectClass'   => 'fdSupannPrefix',
+          'objectClass'   => [
+            'fdSupannPrefix',
+            'fdSupann' . ucfirst($type)
+          ],
           'fdSupannName'  => $prefix,
           'fdSupannLabel' => $prefix,
           'fdSupannList'  => $dnsLists 
