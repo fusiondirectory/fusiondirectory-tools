@@ -1357,6 +1357,12 @@ class Migration extends Cli\LdapApplication
           return;
         }
 
+        // Exit if type or prefix is empty
+        if (empty($type) || empty($prefix)) {
+          echo "Type or Prefix is empty, they are mandatory" . PHP_EOL;
+          return;
+        }
+
         // Create object in LDAP
         $dn    = 'fdSupannName={' . $prefix . '}' . $name . ',' . $rdn . $this->base;
         $attrs = [
