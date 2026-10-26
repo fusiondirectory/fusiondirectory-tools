@@ -54,6 +54,10 @@ class Migration extends Cli\LdapApplication
           'help'    => 'Migrating your Supann Objects',
           'command' => 'cmdMigrateSupannObjects',
         ],
+        'migrate-supannlists:'      => [
+          'help'    => 'Migrating your Supann Lists to Supann Objects',
+          'command' => 'cmdMigrateSupannLists',
+        ],
         'migrate-supann-labels'  => [
           'help'    => 'Migrate supann label attributes to generic fdSupannLabel',
           'command' => 'cmdMigrateSupannLabelAttributes',
@@ -95,6 +99,11 @@ class Migration extends Cli\LdapApplication
     if (isset($this->getopt['set-var']) && !empty($this->getopt['set-var'])) {
       $this->cmdSetVar($this->getopt['set-var']);
       unset($this->getopt['set-var']);
+    }
+
+    if (isset($this->getopt['migrate-supannlists']) && !empty($this->getopt['migrate-supannlists'])) {
+      $this->cmdMigrateSupannLists($this->getopt['migrate-supannlists']);
+      unset($this->getopt['migrate-supannlists']);
     }
 
     $this->runCommands();
@@ -1106,6 +1115,309 @@ class Migration extends Cli\LdapApplication
          . $e->getMessage() . "\n";
     }
   }
+
+  /**
+   * Migrate SupannLists to SupannObjects
+   * @param string $filepath filepath that we will migrate in Supann Objects
+   * @throws Exception
+   */
+  protected function cmdMigrateSupannLists ($filepath): void
+  {
+    try {
+      $this->readFusionDirectoryConfigurationFileAndConnectToLdap();
+    } catch (Exception | SodiumException $e) {
+    }
+
+    if ($this->verbose()) {
+      printf('Reading $filepath' . "\n");
+    }
+
+    try {
+      $ou        = 'ou=supannlists';
+      $ouName    = 'supannlists';
+      echo 'Create ou=supannlists branch' . "\n";
+      $branchAdd = $this->ldap->add(
+        $ou . ',' . $this->base,
+        [
+          'ou'          => $ouName,
+          'objectClass' => 'organizationalUnit',
+        ]
+      );
+      $branchAdd->assert();
+    } catch (Exception $e) {
+      echo "Exception: " . $e->getMessage() . PHP_EOL;
+    }
+
+    if (($handle = fopen($filepath, "r")) !== FALSE) {
+      $dnsLists = [];
+      while (($fields = fgetcsv($handle, NULL, ";", "\"", "\\")) !== FALSE) {
+        // Skip line with # at beginning
+        if (str_starts_with($fields[0], "#")) {
+          continue;
+        }
+
+        // Process based on filename
+        $filename = basename($filepath);
+
+        if (strpos($filename, "activite") !== FALSE) {
+          // Activite
+          try {
+            $ou        = 'ou=activite';
+            $ouName    = 'activite';
+            echo 'Create ou=activite branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=activite,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupannActivite";
+        } else if (strpos($filename, "corps") !== FALSE) {
+          // Corps
+          try {
+            $ou        = 'ou=corps';
+            $ouName    = 'corps';
+            echo 'Create ou=corps branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=corps,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupannCorps";
+        } else if (strpos($filename, "discipline") !== FALSE) {
+          // Discipline
+          try {
+            $ou        = 'ou=discipline';
+            $ouName    = 'discipline';
+            echo 'Create ou=discipline branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=discipline,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupannDiscipline";
+        } else if (strpos($filename, "entite") !== FALSE) {
+          // Discipline
+          try {
+            $ou        = 'ou=entite';
+            $ouName    = 'entite';
+            echo 'Create ou=entite branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=entite,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupannEntite";
+        } else if (strpos($filename, "etablissement") !== FALSE) {
+          // Etablissement
+          try {
+            $ou        = 'ou=etablissement';
+            $ouName    = 'etablissement';
+            echo 'Create ou=etablissement branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=etablissement,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupannEtablissement";
+        } else if (strpos($filename, "eturegimeinscription") !== FALSE) {
+          // EtuRegimeInscription
+          try {
+            $ou        = 'ou=eturegimeinscription';
+            $ouName    = 'eturegimeinscription';
+            echo 'Create ou=eturegimeinscription branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=eturegimeinscription,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupannEtuRegimeInscription";
+        } else if (strpos($filename, "role") !== FALSE) {
+          // Role
+          try {
+            $ou        = 'ou=role';
+            $ouName    = 'role';
+            echo 'Create ou=role branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=role,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupannRole";
+        } else if (strpos($filename, "typediplome") !== FALSE) {
+          // TypeDiplome
+          try {
+            $ou        = 'ou=typediplome';
+            $ouName    = 'typediplome';
+            echo 'Create ou=typediplome branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=typediplome,ou=supannlists,";
+          $name        = $fields[0];
+          $label       = $fields[1];
+          $objectClass = "fdSupanntypeDiplome";
+        } else {
+          $type = explode('_', $filename)[0];
+          echo "Type " . $type . " is not managed" . PHP_EOL;
+          return;
+        }
+
+        // Exit if type or prefix is empty
+        if (empty($type) || empty($prefix)) {
+          echo "Type or Prefix is empty, they are mandatory" . PHP_EOL;
+          return;
+        }
+
+        // Create object in LDAP
+        $dn    = 'fdSupannName={' . $prefix . '}' . $name . ',' . $rdn . $this->base;
+        $attrs = [
+          'objectClass'   => $objectClass,
+          'fdSupannName'  => '{' . $prefix . '}' . $name,
+          'fdSupannLabel' => $label
+        ];
+
+        try {
+          echo 'Create ' . $dn . "\n";
+          $result = $this->ldap->add($dn, $attrs);
+          $result->assert();
+
+          // Add $dn to $dnsList
+          $dnsLists[] = $dn;
+        } catch (Exception $e) {
+          echo "Failed to add $dn:" . $e->getMessage() . "\n";
+        }
+      }
+
+      fclose($handle);
+
+      // Create the supannPrefix that link all the supannLists together
+      try {
+        // @phpstan-ignore variable.undefined
+        $dn    = 'fdSupannName=' . $prefix . ',' . 'ou=prefix,ou=supannlists,' . $this->base;
+
+        // Remove the array if there is only 1 element
+        if (count($dnsLists) == 1) {
+          $dnsLists = $dnsLists[0];
+        }
+
+        $attrs = [
+          'objectClass'   => [
+            'fdSupannPrefix',
+            // @phpstan-ignore variable.undefined
+            'fdSupann' . ucfirst($type)
+          ],
+          // @phpstan-ignore variable.undefined
+          'fdSupannName'  => $prefix,
+          // @phpstan-ignore variable.undefined
+          'fdSupannLabel' => $prefix,
+          'fdSupannList'  => $dnsLists
+        ];
+
+        echo 'Create ' . $dn . "\n";
+
+        $result = $this->ldap->add($dn, $attrs);
+        $result->assert();
+      } catch (Exception $e) {
+        echo "Failed to add $dn:" . $e->getMessage() . "\n";
+      }
+    }
+  }
+
 
   /**
    * Migrate supann label attributes from fdSupannRessourceLabel/fdSupannCiviliteLabel to generic fdSupannLabel
