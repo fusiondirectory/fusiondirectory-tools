@@ -1118,7 +1118,7 @@ class Migration extends Cli\LdapApplication
 
   /**
    * Migrate SupannLists to SupannObjects
-   * @param string filepath filepath that we will migrate in Supann Objects
+   * @param string $filepath filepath that we will migrate in Supann Objects
    * @throws Exception
    */
   protected function cmdMigrateSupannLists ($filepath): void
@@ -1351,6 +1351,10 @@ class Migration extends Cli\LdapApplication
           $name        = $fields[0];
           $label       = $fields[1];
           $objectClass = "fdSupanntypeDiplome";
+        } else {
+          $type = explode('_', $filename)[0];
+          echo "Type " . $type . " is not managed" . PHP_EOL;
+          return;
         }
 
         // Create object in LDAP
@@ -1391,7 +1395,7 @@ class Migration extends Cli\LdapApplication
           ],
           'fdSupannName'  => $prefix,
           'fdSupannLabel' => $prefix,
-          'fdSupannList'  => $dnsLists 
+          'fdSupannList'  => $dnsLists
         ];
 
         echo 'Create ' . $dn . "\n";
