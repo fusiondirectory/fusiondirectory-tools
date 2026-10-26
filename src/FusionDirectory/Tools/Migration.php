@@ -1387,6 +1387,7 @@ class Migration extends Cli\LdapApplication
 
       // Create the supannPrefix that link all the supannLists together
       try {
+        // @phpstan-ignore variable.undefined
         $dn    = 'fdSupannName=' . $prefix . ',' . 'ou=prefix,ou=supannlists,' . $this->base;
 
         // Remove the array if there is only 1 element
@@ -1397,17 +1398,18 @@ class Migration extends Cli\LdapApplication
         $attrs = [
           'objectClass'   => [
             'fdSupannPrefix',
+            // @phpstan-ignore variable.undefined
             'fdSupann' . ucfirst($type)
           ],
+          // @phpstan-ignore variable.undefined
           'fdSupannName'  => $prefix,
+          // @phpstan-ignore variable.undefined
           'fdSupannLabel' => $prefix,
           'fdSupannList'  => $dnsLists
         ];
 
         echo 'Create ' . $dn . "\n";
 
-        // Probably type error because dnsList is also an array
-        // @phpstan-ignore argument.type
         $result = $this->ldap->add($dn, $attrs);
         $result->assert();
       } catch (Exception $e) {
