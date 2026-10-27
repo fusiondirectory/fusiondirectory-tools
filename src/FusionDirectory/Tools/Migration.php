@@ -1388,7 +1388,7 @@ class Migration extends Cli\LdapApplication
       // Create the supannPrefix that link all the supannLists together
       try {
         // @phpstan-ignore variable.undefined
-        $dn    = 'fdSupannName=' . $prefix . ',' . 'ou=prefix,ou=supannlists,' . $this->base;
+        $dn    = 'fdSupannName=' . $prefix . ',ou=' . $ouName . ',ou=supannlists,' . $this->base;
 
         // Remove the array if there is only 1 element
         if (count($dnsLists) == 1) {
@@ -1405,7 +1405,8 @@ class Migration extends Cli\LdapApplication
           'fdSupannName'  => $prefix,
           // @phpstan-ignore variable.undefined
           'fdSupannLabel' => $prefix,
-          'fdSupannList'  => $dnsLists
+          'fdSupannList'  => $dnsLists,
+          'description'   => 'Prefix pour ' . $ouName
         ];
 
         echo 'Create ' . $dn . "\n";
