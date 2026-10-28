@@ -708,7 +708,7 @@ class Migration extends Cli\LdapApplication
 
         '{SUPANN}RHTC' => [
           'label' => 'Chercheur co-tutélaire',
-          'eduPersonAffiliation' => ['faculty', 'researcher', 'member'],//fuck
+          'eduPersonAffiliation' => ['faculty', 'researcher', 'member'],
           'eduPersonPrimaryAffiliation' => 'researcher',
           'weight' => 780
         ],
@@ -1388,7 +1388,7 @@ class Migration extends Cli\LdapApplication
       // Create the supannPrefix that link all the supannLists together
       try {
         // @phpstan-ignore variable.undefined
-        $dn    = 'fdSupannName=' . $prefix . ',ou=' . $ouName . ',ou=supannlists,' . $this->base;
+        $dn    = 'fdSupannName=' . $prefix . ',ou=' . $ouName . ',ou=prefix,ou=supannlists,' . $this->base;
 
         // Remove the array if there is only 1 element
         if (count($dnsLists) == 1) {
@@ -1398,14 +1398,14 @@ class Migration extends Cli\LdapApplication
         $attrs = [
           'objectClass'   => [
             'fdSupannPrefix',
-            // @phpstan-ignore variable.undefined
-            'fdSupann' . ucfirst($type)
           ],
           // @phpstan-ignore variable.undefined
           'fdSupannName'  => $prefix,
           // @phpstan-ignore variable.undefined
           'fdSupannLabel' => $prefix,
           'fdSupannList'  => $dnsLists,
+          // @phpstan-ignore variable.undefined
+          'fdSupannType'  => ucfirst($type),
           'description'   => 'Prefix pour ' . $ouName
         ];
 
