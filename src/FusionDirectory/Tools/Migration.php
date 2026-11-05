@@ -1232,7 +1232,7 @@ class Migration extends Cli\LdapApplication
           $label       = $fields[1];
           $objectClass = "fdSupannDiscipline";
         } else if (strpos($filename, "entite") !== FALSE) {
-          // Discipline
+          // Entite
           try {
             $ou        = 'ou=entite';
             $ouName    = 'entite';
@@ -1384,6 +1384,22 @@ class Migration extends Cli\LdapApplication
       }
 
       fclose($handle);
+
+      // Create type branch under ou=prefix
+      try {
+        $ou = 'ou=' . $ouName;
+        echo 'Create ou=' . $ouName . ' branch under ou=prefix' . "\n";
+        $branchAdd = $this->ldap->add(
+          $ou . ',ou=prefix,ou=supannlists,' . $this->base,
+          [
+            'ou'          => $ouName,
+            'objectClass' => 'organizationalUnit',
+          ]
+        );
+        $branchAdd->assert();
+      } catch (Exception $e) {
+        echo "Exception: " . $e->getMessage() . PHP_EOL;
+      }
 
       // Create the supannPrefix that link all the supannLists together
       try {
