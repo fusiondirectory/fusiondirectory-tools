@@ -1351,6 +1351,33 @@ class Migration extends Cli\LdapApplication
           $name        = $fields[0];
           $label       = $fields[1];
           $objectClass = "fdSupanntypeDiplome";
+        } else if (strpos($filename, "diplome") !== FALSE) {
+          // Diplome
+          // It must be after typeDiplome beceause diplome also match typeDiplome string
+          try {
+            $ou        = 'ou=diplome';
+            $ouName    = 'diplome';
+            echo 'Create ou=diplome branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=diplome,ou=supannlists,";
+          $name        = $fields[0];
+          $typedip     = $fields[1];
+          $sect        = $fields[2];
+          $label       = $fields[3] . ';' . $fields[4];
+          $objectClass = "fdSupannDiplome";
         } else {
           $type = explode('_', $filename)[0];
           echo "Type " . $type . " is not managed" . PHP_EOL;
@@ -1363,23 +1390,47 @@ class Migration extends Cli\LdapApplication
           return;
         }
 
-        // Create object in LDAP
-        $dn    = 'fdSupannName={' . $prefix . '}' . $name . ',' . $rdn . $this->base;
-        $attrs = [
-          'objectClass'   => $objectClass,
-          'fdSupannName'  => '{' . $prefix . '}' . $name,
-          'fdSupannLabel' => $label
-        ];
+        // Create object in LDAP differently based on the type
+        if ($type == 'diplome') {
+          $dn    = 'fdSupannName={' . $prefix . '}' . $name . ',' . $rdn . $this->base;
+          $attrs = [
+            'objectClass'              => $objectClass,
+            'fdSupannName'             => '{' . $prefix . '}' . $name,
+            'fdSupannLabel'            => $label,
+            'fdSupannDiplomeType'      => '{SISE}' . $typedip,
+            'fdSupannDisciplineSector' => '{SISE}' . $sect
+          ];
 
-        try {
-          echo 'Create ' . $dn . "\n";
-          $result = $this->ldap->add($dn, $attrs);
-          $result->assert();
+          try {
+            echo 'Create ' . $dn . "\n";
+            $result = $this->ldap->add($dn, $attrs);
+            $result->assert();
 
-          // Add $dn to $dnsList
-          $dnsLists[] = $dn;
-        } catch (Exception $e) {
-          echo "Failed to add $dn:" . $e->getMessage() . "\n";
+            // Add $dn to $dnsList
+            $dnsLists[] = $dn;
+          } catch (Exception $e) {
+            echo "Failed to add $dn:" . $e->getMessage() . "\n";
+            $dnsLists[] = $dn;
+          }
+        } else {
+          $dn    = 'fdSupannName={' . $prefix . '}' . $name . ',' . $rdn . $this->base;
+          $attrs = [
+            'objectClass'   => $objectClass,
+            'fdSupannName'  => '{' . $prefix . '}' . $name,
+            'fdSupannLabel' => $label
+          ];
+
+          try {
+            echo 'Create ' . $dn . "\n";
+            $result = $this->ldap->add($dn, $attrs);
+            $result->assert();
+
+            // Add $dn to $dnsList
+            $dnsLists[] = $dn;
+          } catch (Exception $e) {
+            echo "Failed to add $dn:" . $e->getMessage() . "\n";
+            $dnsLists[] = $dn;
+          }
         }
       }
 
