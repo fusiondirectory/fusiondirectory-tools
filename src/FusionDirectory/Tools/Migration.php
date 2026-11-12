@@ -708,7 +708,7 @@ class Migration extends Cli\LdapApplication
 
         '{SUPANN}RHTC' => [
           'label' => 'Chercheur co-tutélaire',
-          'eduPersonAffiliation' => ['faculty', 'researcher', 'member'],//fuck
+          'eduPersonAffiliation' => ['faculty', 'researcher', 'member'],
           'eduPersonPrimaryAffiliation' => 'researcher',
           'weight' => 780
         ],
@@ -1232,7 +1232,7 @@ class Migration extends Cli\LdapApplication
           $label       = $fields[1];
           $objectClass = "fdSupannDiscipline";
         } else if (strpos($filename, "entite") !== FALSE) {
-          // Discipline
+          // Entite
           try {
             $ou        = 'ou=entite';
             $ouName    = 'entite';
@@ -1351,6 +1351,33 @@ class Migration extends Cli\LdapApplication
           $name        = $fields[0];
           $label       = $fields[1];
           $objectClass = "fdSupanntypeDiplome";
+        } else if (strpos($filename, "diplome") !== FALSE) {
+          // Diplome
+          // It must be after typeDiplome beceause diplome also match typeDiplome string
+          try {
+            $ou        = 'ou=diplome';
+            $ouName    = 'diplome';
+            echo 'Create ou=diplome branch' . "\n";
+            $branchAdd = $this->ldap->add(
+              $ou . ',ou=supannlists,' . $this->base,
+              [
+                'ou'          => $ouName,
+                'objectClass' => 'organizationalUnit',
+              ]
+            );
+            $branchAdd->assert();
+          } catch (Exception $e) {
+            echo "Exception: " . $e->getMessage() . PHP_EOL;
+          }
+
+          $type        = explode('_', $filename)[0];
+          $prefix      = explode('_', $filename)[1];
+          $rdn         = "ou=diplome,ou=supannlists,";
+          $name        = $fields[0];
+          $typedip     = $fields[1];
+          $sect        = $fields[2];
+          $label       = $fields[3] . ';' . $fields[4];
+          $objectClass = "fdSupannDiplome";
         } else {
           $type = explode('_', $filename)[0];
           echo "Type " . $type . " is not managed" . PHP_EOL;
@@ -1363,32 +1390,74 @@ class Migration extends Cli\LdapApplication
           return;
         }
 
-        // Create object in LDAP
-        $dn    = 'fdSupannName={' . $prefix . '}' . $name . ',' . $rdn . $this->base;
-        $attrs = [
-          'objectClass'   => $objectClass,
-          'fdSupannName'  => '{' . $prefix . '}' . $name,
-          'fdSupannLabel' => $label
-        ];
+        // Create object in LDAP differently based on the type
+        if ($type == 'diplome') {
+          $dn    = 'fdSupannName={' . $prefix . '}' . $name . ',' . $rdn . $this->base;
+          $attrs = [
+            'objectClass'              => $objectClass,
+            'fdSupannName'             => '{' . $prefix . '}' . $name,
+            'fdSupannLabel'            => $label,
+            // @phpstan-ignore variable.undefined
+            'fdSupannDiplomeType'      => '{SISE}' . $typedip,
+            // @phpstan-ignore variable.undefined
+            'fdSupannDisciplineSector' => '{SISE}' . $sect
+          ];
 
-        try {
-          echo 'Create ' . $dn . "\n";
-          $result = $this->ldap->add($dn, $attrs);
-          $result->assert();
+          try {
+            echo 'Create ' . $dn . "\n";
+            $result = $this->ldap->add($dn, $attrs);
+            $result->assert();
 
-          // Add $dn to $dnsList
-          $dnsLists[] = $dn;
-        } catch (Exception $e) {
-          echo "Failed to add $dn:" . $e->getMessage() . "\n";
+            // Add $dn to $dnsList
+            $dnsLists[] = $dn;
+          } catch (Exception $e) {
+            echo "Failed to add $dn:" . $e->getMessage() . "\n";
+            $dnsLists[] = $dn;
+          }
+        } else {
+          $dn    = 'fdSupannName={' . $prefix . '}' . $name . ',' . $rdn . $this->base;
+          $attrs = [
+            'objectClass'   => $objectClass,
+            'fdSupannName'  => '{' . $prefix . '}' . $name,
+            'fdSupannLabel' => $label
+          ];
+
+          try {
+            echo 'Create ' . $dn . "\n";
+            $result = $this->ldap->add($dn, $attrs);
+            $result->assert();
+
+            // Add $dn to $dnsList
+            $dnsLists[] = $dn;
+          } catch (Exception $e) {
+            echo "Failed to add $dn:" . $e->getMessage() . "\n";
+            $dnsLists[] = $dn;
+          }
         }
       }
 
       fclose($handle);
 
+      // Create type branch under ou=prefix
+      try {
+        $ou = 'ou=' . $ouName;
+        echo 'Create ou=' . $ouName . ' branch under ou=prefix' . "\n";
+        $branchAdd = $this->ldap->add(
+          $ou . ',ou=prefix,ou=supannlists,' . $this->base,
+          [
+            'ou'          => $ouName,
+            'objectClass' => 'organizationalUnit',
+          ]
+        );
+        $branchAdd->assert();
+      } catch (Exception $e) {
+        echo "Exception: " . $e->getMessage() . PHP_EOL;
+      }
+
       // Create the supannPrefix that link all the supannLists together
       try {
         // @phpstan-ignore variable.undefined
-        $dn    = 'fdSupannName=' . $prefix . ',' . 'ou=prefix,ou=supannlists,' . $this->base;
+        $dn    = 'fdSupannName=' . $prefix . ',ou=' . $ouName . ',ou=prefix,ou=supannlists,' . $this->base;
 
         // Remove the array if there is only 1 element
         if (count($dnsLists) == 1) {
@@ -1398,14 +1467,15 @@ class Migration extends Cli\LdapApplication
         $attrs = [
           'objectClass'   => [
             'fdSupannPrefix',
-            // @phpstan-ignore variable.undefined
-            'fdSupann' . ucfirst($type)
           ],
           // @phpstan-ignore variable.undefined
           'fdSupannName'  => $prefix,
           // @phpstan-ignore variable.undefined
           'fdSupannLabel' => $prefix,
-          'fdSupannList'  => $dnsLists
+          'fdSupannList'  => $dnsLists,
+          // @phpstan-ignore variable.undefined
+          'fdSupannType'  => ucfirst($type),
+          'description'   => 'Prefix pour ' . $ouName
         ];
 
         echo 'Create ' . $dn . "\n";
