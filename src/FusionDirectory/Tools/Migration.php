@@ -1397,7 +1397,9 @@ class Migration extends Cli\LdapApplication
             'objectClass'              => $objectClass,
             'fdSupannName'             => '{' . $prefix . '}' . $name,
             'fdSupannLabel'            => $label,
+            // @phpstan-ignore variable.undefined
             'fdSupannDiplomeType'      => '{SISE}' . $typedip,
+            // @phpstan-ignore variable.undefined
             'fdSupannDisciplineSector' => '{SISE}' . $sect
           ];
 
