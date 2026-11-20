@@ -330,9 +330,19 @@ class InsertSchema extends Cli\LdapApplication
    */
   protected function gatherSchemaInformation (string $path): array
   {
+    // Only allow schema files within the default schema directory
     if (!is_file($path)) {
       $path = $this->defaultSchemaDir . '/' . $path;
     }
+
+    // Resolve canonical path and validate it
+    $realPath = realpath($path);
+    $realBase  = realpath($this->defaultSchemaDir);
+    if ($realPath === FALSE || $realBase === FALSE ||
+        strpos($realPath, $realBase) !== 0) {
+      throw new \Exception('Schema file must be located within: ' . $this->defaultSchemaDir);
+    }
+    $path = $realPath;
 
     // Recuperate the filename and verify if the file contains the proper extension.
     $name = basename($path);
