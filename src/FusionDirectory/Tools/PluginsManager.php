@@ -529,7 +529,6 @@ class PluginsManager extends Cli\LdapApplication
    */
   public function removePlugin (string $pluginName)
   {
-
     // Validate plugin name: only alphanumeric, dash, underscore
     if (!preg_match('/^[a-zA-Z0-9_-]+$/', $pluginName)) {
       throw new \Exception('Invalid plugin name: must be alphanumeric with dashes/underscores only');
