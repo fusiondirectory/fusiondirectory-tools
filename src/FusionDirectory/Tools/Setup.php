@@ -1189,7 +1189,7 @@ EOF;
       $poFiles = implode(' ', array_map('escapeshellarg', $files));
 
       /* Merge .po files */
-      $command = 'msgcat --use-first ' . $poFiles . '>' . $langCacheDir . '/fusiondirectory.po';
+      $command = 'msgcat --use-first ' . $poFiles . '>' . escapeshellarg($langCacheDir . '/fusiondirectory.po');
       if ($this->verbose()) {
         echo '$ ' . $command . "\n";
       }
