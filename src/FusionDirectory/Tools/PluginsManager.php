@@ -494,8 +494,14 @@ class PluginsManager extends Cli\LdapApplication
     // If package do not install
     if ($pluginInfo['information']['origin'] !== 'package') {
 
+      // Validate plugin name: only alphanumeric, dash, underscore
+      $pluginName = $pluginInfo['information']['name'];
+      if (!preg_match('/^[a-zA-Z0-9_-]+$/', $pluginName)) {
+        throw new \Exception('Invalid plugin name: must be alphanumeric with dashes/underscores only');
+      }
+
       // YAML description must be saved within : /etc/fusiondirectory/yaml/plugin_name/description.yaml
-      $this->copyDirectory($pluginPath->getPathname() . '/contrib/yaml', $this->vars['fd_config_dir'] . '/yaml/' . $pluginInfo['information']['name'] . '/');
+      $this->copyDirectory($pluginPath->getPathname() . '/contrib/yaml', $this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/');
       // Historical - retro compatibility
       $this->copyDirectory($pluginPath->getPathname() . '/admin', $this->vars['fd_home'] . '/plugins/management');
       $this->copyDirectory($pluginPath->getPathname() . '/config', $this->vars['fd_home'] . '/plugins/configuration/backend');
@@ -508,8 +514,8 @@ class PluginsManager extends Cli\LdapApplication
       $this->copyDirectory($pluginPath->getPathname() . '/ihtml', $this->vars['fd_home'] . '/ihtml');
       $this->copyDirectory($pluginPath->getPathname() . '/include', $this->vars['fd_home'] . '/include');
       $this->copyDirectory($pluginPath->getPathname() . '/contrib/openldap', $this->vars['fd_schema_dir']);
-      $this->copyDirectory($pluginPath->getPathname() . '/contrib/etc', $this->vars['fd_config_dir'] . '/' . $pluginInfo['information']['name']);
-      $this->copyDirectory($pluginPath->getPathname() . '/locale', $this->vars['fd_home'] . '/locale/plugins/' . $pluginInfo['information']['name'] . '/locale');
+      $this->copyDirectory($pluginPath->getPathname() . '/contrib/etc', $this->vars['fd_config_dir'] . '/' . $pluginName );
+      $this->copyDirectory($pluginPath->getPathname() . '/locale', $this->vars['fd_home'] . '/locale/plugins/' . $pluginName  . '/locale');
       $this->copyDirectory($pluginPath->getPathname() . '/export', $this->vars['fd_home'] . '/plugins/export');
       $this->copyDirectory($pluginPath->getPathname() . '/generic', $this->vars['fd_home'] . '/plugins/generic');
     }
@@ -523,6 +529,12 @@ class PluginsManager extends Cli\LdapApplication
    */
   public function removePlugin (string $pluginName)
   {
+
+    // Validate plugin name: only alphanumeric, dash, underscore
+    if (!preg_match('/^[a-zA-Z0-9_-]+$/', $pluginName)) {
+      throw new \Exception('Invalid plugin name: must be alphanumeric with dashes/underscores only');
+    }
+
     $pluginInfo = $this->parseYamlFile($this->vars['fd_config_dir'] . '/yaml/' . $pluginName . '/description.yaml');
 
     // Check if origin is set properly
